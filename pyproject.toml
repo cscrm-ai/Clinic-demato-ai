@@ -1,0 +1,17 @@
+[project]
+name = "clinic-skin-analysis"
+version = "0.1.0"
+description = "White-label AI skin analysis system for aesthetic clinics"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "agno",
+    "fal-client",
+    "fastapi",
+    "google-genai",
+    "httpx>=0.28.1",
+    "pillow",
+    "python-dotenv",
+    "python-multipart",
+    "uvicorn",
+]

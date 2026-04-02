@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Personalizar Clínica</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #F8F9FA;
+    color: #1A1A2E;
+    min-height: 100vh;
+}
+
+/* ── Login ── */
+.login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1.5rem;
+}
+.login-card {
+    background: #fff;
+    padding: 2.5rem 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+}
+.login-card h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+.login-card p { font-size: 0.9rem; color: #666; margin-bottom: 1.5rem; }
+.login-card input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+}
+.login-card input:focus { outline: none; border-color: #D99C94; }
+.login-card .btn-login {
+    width: 100%;
+    padding: 0.75rem;
+    background: #3A3330;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+.login-card .btn-login:hover { background: #2A2320; }
+.login-error { color: #E74C3C; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+
+/* ── Dashboard ── */
+.dashboard { display: none; }
+.dashboard.active { display: block; }
+.login-screen.hidden { display: none; }
+
+.top-bar {
+    background: #fff;
+    border-bottom: 1px solid #E8E8E8;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.top-bar h1 { font-size: 1.15rem; font-weight: 700; }
+.top-bar .actions { display: flex; gap: 0.75rem; }
+.btn-save {
+    padding: 0.5rem 1.25rem;
+    background: #D99C94;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+.btn-save:hover { filter: brightness(1.08); }
+.btn-preview {
+    padding: 0.5rem 1.25rem;
+    background: #F0EBE3;
+    color: #3A3330;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+.btn-logout {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    color: #999;
+    border: 1px solid #E0E0E0;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.content {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.card {
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+.card h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #F0F0F0;
+}
+
+.field { margin-bottom: 1rem; }
+.field:last-child { margin-bottom: 0; }
+.field label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.field input, .field textarea, .field select {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+.field input:focus, .field textarea:focus, .field select:focus {
+    outline: none;
+    border-color: #D99C94;
+}
+.field textarea { resize: vertical; min-height: 80px; }
+.field input[type="color"] {
+    height: 42px;
+    padding: 0.25rem;
+    cursor: pointer;
+}
+
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.75rem;
+}
+.color-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.color-field label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #666;
+    min-width: 65px;
+    margin-bottom: 0;
+}
+.color-field input[type="color"] {
+    width: 42px;
+    height: 36px;
+    border: 1.5px solid #E0E0E0;
+    border-radius: 0.375rem;
+    padding: 2px;
+    cursor: pointer;
+}
+
+/* Logo upload */
+.logo-upload {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.logo-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 0.5rem;
+    border: 1.5px dashed #E0E0E0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #FAFAFA;
+    flex-shrink: 0;
+}
+.logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+.logo-preview .placeholder { font-size: 0.75rem; color: #CCC; }
+.btn-upload {
+    padding: 0.5rem 1rem;
+    background: #F0EBE3;
+    color: #3A3330;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+/* Stats */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: #FAFAFA;
+    border-radius: 0.5rem;
+}
+.stat-value { font-size: 1.75rem; font-weight: 700; color: #D99C94; }
+.stat-label { font-size: 0.75rem; color: #999; margin-top: 0.25rem; }
+
+/* Videos section */
+.video-list { display: flex; flex-direction: column; gap: .6rem; }
+.video-entry {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: .5rem;
+    align-items: center;
+}
+.video-entry input {
+    padding: .55rem .75rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: .5rem;
+    font-size: .88rem;
+    font-family: inherit;
+    transition: border-color .2s;
+}
+.video-entry input:focus { outline: none; border-color: #D99C94; }
+.btn-remove-video {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid #E0E0E0;
+    background: none;
+    color: #999;
+    font-size: .9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: inherit;
+    transition: all .2s;
+}
+.btn-remove-video:hover { border-color: #E74C3C; color: #E74C3C; }
+.btn-add-video {
+    margin-top: .75rem;
+    padding: .5rem 1rem;
+    background: #F0EBE3;
+    color: #3A3330;
+    border: none;
+    border-radius: .5rem;
+    font-weight: 600;
+    font-size: .82rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .2s;
+}
+.btn-add-video:hover { background: #E5DDD5; }
+.video-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: .5rem;
+    margin-bottom: .25rem;
+}
+.video-header span {
+    font-size: .72rem;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding-left: .1rem;
+}
+
+/* ── Histórico de Análises ── */
+.analyses-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.analysis-card {
+    border: 1px solid #F0F0F0;
+    border-radius: .75rem;
+    overflow: hidden;
+    background: #FAFAFA;
+}
+.analysis-card-top {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    align-items: flex-start;
+}
+.analysis-img-wrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 100px;
+    height: 130px;
+    border-radius: .5rem;
+    overflow: hidden;
+    background: #EEE;
+}
+.analysis-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.analysis-marker {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #D99C94;
+    border: 1.5px solid #fff;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7px;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    z-index: 2;
+    pointer-events: none;
+}
+.analysis-marker.p-PRIORITARIO { background: #E74C3C; }
+.analysis-marker.p-OPCIONAL { background: #827870; }
+.analysis-info { flex: 1; min-width: 0; }
+.analysis-meta {
+    font-size: .75rem;
+    color: #999;
+    margin-bottom: .35rem;
+}
+.analysis-badges {
+    display: flex;
+    gap: .35rem;
+    flex-wrap: wrap;
+    margin-bottom: .6rem;
+}
+.analysis-badge {
+    font-size: .68rem;
+    font-weight: 600;
+    padding: .15rem .5rem;
+    border-radius: 9999px;
+    background: rgba(217,156,148,.12);
+    color: #D99C94;
+    border: 1px solid rgba(217,156,148,.2);
+}
+.analysis-findings { display: flex; flex-direction: column; gap: .35rem; }
+.analysis-finding {
+    font-size: .8rem;
+}
+.analysis-finding-zone {
+    font-weight: 600;
+    color: #3A3330;
+    font-size: .75rem;
+}
+.analysis-procs {
+    font-size: .72rem;
+    color: #888;
+    margin-top: .1rem;
+    padding-left: .5rem;
+    border-left: 2px solid rgba(217,156,148,.3);
+}
+.analysis-card-actions {
+    padding: .5rem 1rem .75rem;
+    display: flex;
+    justify-content: flex-end;
+}
+.btn-del-analysis {
+    padding: .3rem .75rem;
+    border-radius: 9999px;
+    border: 1px solid #E0E0E0;
+    background: none;
+    color: #999;
+    font-size: .75rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .2s;
+}
+.btn-del-analysis:hover { border-color: #E74C3C; color: #E74C3C; }
+.analyses-empty {
+    text-align: center;
+    padding: 2rem;
+    color: #CCC;
+    font-size: .9rem;
+}
+.analyses-loading {
+    text-align: center;
+    padding: 1.5rem;
+    color: #AAA;
+    font-size: .85rem;
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #3A3330;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: transform 0.3s;
+    z-index: 100;
+}
+.toast.visible { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+    <div class="login-card">
+        <h1>Painel Admin</h1>
+        <p>Digite a senha para personalizar sua clínica</p>
+        <input type="password" id="passwordInput" placeholder="Senha" autofocus>
+        <button class="btn-login" id="btnLogin">Entrar</button>
+        <div class="login-error" id="loginError">Senha incorreta</div>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+    <div class="top-bar">
+        <h1>Personalizar Clínica</h1>
+        <div class="actions">
+            <button class="btn-preview" id="btnPreview">Visualizar</button>
+            <button class="btn-save" id="btnSave">Salvar</button>
+            <button class="btn-logout" id="btnLogout">Sair</button>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <!-- Stats -->
+        <div class="card">
+            <h2>Estatísticas</h2>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="statAnalyses">0</div>
+                    <div class="stat-label">Análises realizadas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Identidade -->
+        <div class="card">
+            <h2>Identidade</h2>
+            <div class="field">
+                <label>Nome da Clínica</label>
+                <input type="text" id="cfgClinicName" placeholder="Clínica Bella">
+            </div>
+            <div class="field">
+                <label>Texto de Boas-vindas</label>
+                <textarea id="cfgWelcome" placeholder="Bem-vinda! Descubra o melhor para sua pele."></textarea>
+            </div>
+            <div class="field">
+                <label>Logo</label>
+                <div class="logo-upload">
+                    <div class="logo-preview" id="logoPreview">
+                        <span class="placeholder">Logo</span>
+                    </div>
+                    <button class="btn-upload" id="btnUploadLogo">Upload Logo</button>
+                    <input type="file" id="logoInput" accept="image/*" style="display:none;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Cores -->
+        <div class="card">
+            <h2>Cores</h2>
+            <div class="color-grid">
+                <div class="color-field">
+                    <label>Primária</label>
+                    <input type="color" id="cfgColorPrimary" value="#D9BFB2">
+                </div>
+                <div class="color-field">
+                    <label>Secundária</label>
+                    <input type="color" id="cfgColorSecondary" value="#827870">
+                </div>
+                <div class="color-field">
+                    <label>Destaque</label>
+                    <input type="color" id="cfgColorAccent" value="#D99C94">
+                </div>
+                <div class="color-field">
+                    <label>Fundo</label>
+                    <input type="color" id="cfgColorBg" value="#F0EBE3">
+                </div>
+                <div class="color-field">
+                    <label>Texto</label>
+                    <input type="color" id="cfgColorText" value="#3A3330">
+                </div>
+            </div>
+        </div>
+
+        <!-- Fonte -->
+        <div class="card">
+            <h2>Tipografia</h2>
+            <div class="field">
+                <label>Fonte Principal</label>
+                <select id="cfgFont"></select>
+            </div>
+            <div class="field" id="fontPreviewField">
+                <label>Preview</label>
+                <div id="fontPreview" style="padding:1rem;background:#FAFAFA;border-radius:0.5rem;font-size:1rem;line-height:1.6;">
+                    Analise de pele personalizada com inteligencia artificial.
+                </div>
+            </div>
+        </div>
+
+        <!-- Contato -->
+        <div class="card">
+            <h2>Rodapé / Contato</h2>
+            <div class="field">
+                <label>Telefone</label>
+                <input type="text" id="cfgPhone" placeholder="(47) 3333-4444">
+            </div>
+            <div class="field">
+                <label>Instagram</label>
+                <input type="text" id="cfgInstagram" placeholder="@clinicabella">
+            </div>
+            <div class="field">
+                <label>Endereço</label>
+                <input type="text" id="cfgAddress" placeholder="Rua das Flores, 123">
+            </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="card">
+            <h2>Aviso Legal</h2>
+            <div class="field">
+                <label>Texto de Disclaimer</label>
+                <textarea id="cfgDisclaimer" rows="4"></textarea>
+            </div>
+        </div>
+
+        <!-- Histórico de Análises -->
+        <div class="card">
+            <h2>Histórico de Análises</h2>
+            <p style="font-size:.85rem;color:#888;margin-bottom:1rem">Registro de todas as análises realizadas com imagem, marcadores e procedimentos sugeridos.</p>
+            <div id="analysesContainer">
+                <div class="analyses-loading">Carregando histórico...</div>
+            </div>
+        </div>
+
+        <!-- Vídeos dos Procedimentos -->
+        <div class="card">
+            <h2>Vídeos dos Procedimentos</h2>
+            <p style="font-size:.85rem;color:#888;margin-bottom:1rem">Vincule um vídeo (YouTube ou outro link) a cada procedimento. O botão "▶ Assistir" aparecerá automaticamente no laudo quando o procedimento for sugerido.</p>
+            <div class="video-header">
+                <span>Nome do Procedimento</span>
+                <span>URL do Vídeo</span>
+                <span></span>
+            </div>
+            <div class="video-list" id="videoList"></div>
+            <button class="btn-add-video" onclick="addVideo()">+ Adicionar Vídeo</button>
+        </div>
+
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let adminPassword = '';
+let config = {};
+let fontOptions = [];
+
+// ── Login ──
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+    const pw = document.getElementById('passwordInput').value;
+    try {
+        const resp = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pw }),
+        });
+        if (resp.ok) {
+            adminPassword = pw;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('active');
+            loadConfig();
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+        }
+    } catch (e) {
+        document.getElementById('loginError').style.display = 'block';
+    }
+}
+
+// ── Load Config ──
+async function loadConfig() {
+    const resp = await fetch('/api/admin/config', {
+        headers: { 'X-Admin-Password': adminPassword },
+    });
+    config = await resp.json();
+    fontOptions = config._font_options || [];
+    populateForm();
+    loadAnalyses();
+}
+
+function populateForm() {
+    document.getElementById('cfgClinicName').value = config.clinic_name || '';
+    document.getElementById('cfgWelcome').value = config.welcome_text || '';
+
+    const colors = config.colors || {};
+    document.getElementById('cfgColorPrimary').value = colors.primary || '#D99C94';
+    document.getElementById('cfgColorSecondary').value = colors.secondary || '#827870';
+    document.getElementById('cfgColorAccent').value = colors.accent || '#C4A265';
+    document.getElementById('cfgColorBg').value = colors.background || '#FAF7F4';
+    document.getElementById('cfgColorText').value = colors.text || '#3A3330';
+
+    // Font select
+    const select = document.getElementById('cfgFont');
+    select.innerHTML = fontOptions.map(f =>
+        '<option value="' + f + '"' + (f === config.font ? ' selected' : '') + '>' + f + '</option>'
+    ).join('');
+    updateFontPreview();
+
+    const footer = config.footer || {};
+    document.getElementById('cfgPhone').value = footer.phone || '';
+    document.getElementById('cfgInstagram').value = footer.instagram || '';
+    document.getElementById('cfgAddress').value = footer.address || '';
+
+    document.getElementById('cfgDisclaimer').value = config.disclaimer || '';
+
+    // Videos
+    renderVideos();
+
+    // Logo
+    if (config.logo_url) {
+        document.getElementById('logoPreview').innerHTML = '<img src="' + config.logo_url + '">';
+    }
+
+    // Stats
+    document.getElementById('statAnalyses').textContent = config.analyses_count || 0;
+}
+
+// ── Font preview ──
+document.getElementById('cfgFont').addEventListener('change', updateFontPreview);
+function updateFontPreview() {
+    const font = document.getElementById('cfgFont').value;
+    document.getElementById('fontPreview').style.fontFamily = "'" + font + "', system-ui, sans-serif";
+}
+
+// ── Logo upload ──
+document.getElementById('btnUploadLogo').addEventListener('click', () => {
+    document.getElementById('logoInput').click();
+});
+document.getElementById('logoInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const form = new FormData();
+    form.append('image', file);
+
+    try {
+        const resp = await fetch('/api/admin/logo', {
+            method: 'POST',
+            headers: { 'X-Admin-Password': adminPassword },
+            body: form,
+        });
+        const result = await resp.json();
+        if (result.logo_url) {
+            config.logo_url = result.logo_url;
+            document.getElementById('logoPreview').innerHTML = '<img src="' + result.logo_url + '">';
+            toast('Logo atualizado!');
+        } else {
+            // Preview local
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('logoPreview').innerHTML = '<img src="' + ev.target.result + '">';
+            };
+            reader.readAsDataURL(file);
+            toast('Logo salvo (temporário — configure o Blob para persistência)');
+        }
+    } catch (err) {
+        toast('Erro ao enviar logo');
+    }
+});
+
+// ── Save ──
+document.getElementById('btnSave').addEventListener('click', saveConfig);
+
+async function saveConfig() {
+    const data = {
+        clinic_name: document.getElementById('cfgClinicName').value,
+        welcome_text: document.getElementById('cfgWelcome').value,
+        logo_url: config.logo_url || '',
+        colors: {
+            primary: document.getElementById('cfgColorPrimary').value,
+            secondary: document.getElementById('cfgColorSecondary').value,
+            accent: document.getElementById('cfgColorAccent').value,
+            background: document.getElementById('cfgColorBg').value,
+            text: document.getElementById('cfgColorText').value,
+        },
+        font: document.getElementById('cfgFont').value,
+        footer: {
+            phone: document.getElementById('cfgPhone').value,
+            instagram: document.getElementById('cfgInstagram').value,
+            address: document.getElementById('cfgAddress').value,
+        },
+        disclaimer: document.getElementById('cfgDisclaimer').value,
+        analyses_count: config.analyses_count || 0,
+        videos: Array.from(document.querySelectorAll('.video-entry')).map(row => ({
+            procedure: row.querySelector('.video-proc').value.trim(),
+            url: row.querySelector('.video-url').value.trim(),
+        })).filter(v => v.procedure || v.url),
+    };
+
+    try {
+        const resp = await fetch('/api/admin/config', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Password': adminPassword,
+            },
+            body: JSON.stringify(data),
+        });
+        if (resp.ok) {
+            config = data;
+            toast('Configurações salvas!');
+        } else {
+            toast('Erro ao salvar');
+        }
+    } catch (e) {
+        toast('Erro de conexao');
+    }
+}
+
+// ── Preview ──
+document.getElementById('btnPreview').addEventListener('click', () => {
+    window.open('/', '_blank');
+});
+
+// ── Logout ──
+document.getElementById('btnLogout').addEventListener('click', () => {
+    adminPassword = '';
+    config = {};
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('dashboard').classList.remove('active');
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('loginError').style.display = 'none';
+});
+
+// ── Histórico de Análises ──
+async function loadAnalyses() {
+    try {
+        const resp = await fetch('/api/admin/analyses', {
+            headers: { 'X-Admin-Password': adminPassword },
+        });
+        const records = await resp.json();
+        renderAnalyses(records);
+    } catch (e) {
+        document.getElementById('analysesContainer').innerHTML =
+            '<div class="analyses-empty">Erro ao carregar histórico.</div>';
+    }
+}
+
+function renderAnalyses(records) {
+    const container = document.getElementById('analysesContainer');
+    if (!records || !records.length) {
+        container.innerHTML = '<div class="analyses-empty">Nenhuma análise realizada ainda.</div>';
+        return;
+    }
+    container.innerHTML = '<div class="analyses-grid">' +
+        records.map(r => {
+            const dt = new Date(r.timestamp);
+            const dateStr = dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const markers = (r.findings || []).map((f, i) =>
+                (f.x_point > 0 || f.y_point > 0)
+                    ? '<div class="analysis-marker p-' + f.priority + '" style="left:' + (f.x_point * 100).toFixed(1) + '%;top:' + (f.y_point * 100).toFixed(1) + '%">' + (i + 1) + '</div>'
+                    : ''
+            ).join('');
+            const findings = (r.findings || []).map((f, i) =>
+                '<div class="analysis-finding">' +
+                    '<div class="analysis-finding-zone">' + (i + 1) + '. ' + (f.zone || '') + '</div>' +
+                    (f.procedimentos && f.procedimentos.length
+                        ? '<div class="analysis-procs">' + f.procedimentos.join(' · ') + '</div>'
+                        : '') +
+                '</div>'
+            ).join('');
+            return '<div class="analysis-card" id="acard-' + r.id + '">' +
+                '<div class="analysis-card-top">' +
+                    '<div class="analysis-img-wrap">' +
+                        (r.image_b64 ? '<img src="data:image/jpeg;base64,' + r.image_b64 + '" alt="Análise">' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#CCC;font-size:.7rem">Sem imagem</div>') +
+                        markers +
+                    '</div>' +
+                    '<div class="analysis-info">' +
+                        '<div class="analysis-meta">' + dateStr + '</div>' +
+                        '<div class="analysis-badges">' +
+                            (r.fitzpatrick_type ? '<span class="analysis-badge">Fototipo ' + r.fitzpatrick_type + '</span>' : '') +
+                            (r.skin_type ? '<span class="analysis-badge">' + r.skin_type + '</span>' : '') +
+                        '</div>' +
+                        '<div class="analysis-findings">' + findings + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="analysis-card-actions">' +
+                    '<button class="btn-del-analysis" onclick="deleteAnalysis(\'' + r.id + '\')">🗑 Excluir</button>' +
+                '</div>' +
+            '</div>';
+        }).join('') +
+    '</div>';
+}
+
+async function deleteAnalysis(id) {
+    if (!confirm('Excluir esta análise?')) return;
+    await fetch('/api/admin/analyses/' + id, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Password': adminPassword },
+    });
+    document.getElementById('acard-' + id)?.remove();
+    const grid = document.querySelector('.analyses-grid');
+    if (grid && !grid.children.length) {
+        document.getElementById('analysesContainer').innerHTML =
+            '<div class="analyses-empty">Nenhuma análise realizada ainda.</div>';
+    }
+}
+
+// ── Videos ──
+function renderVideos() {
+    const videos = config.videos || [];
+    const list = document.getElementById('videoList');
+    if (!videos.length) {
+        list.innerHTML = '<p style="font-size:.82rem;color:#bbb;padding:.25rem 0">Nenhum vídeo cadastrado ainda.</p>';
+        return;
+    }
+    list.innerHTML = videos.map((v, i) =>
+        '<div class="video-entry">' +
+            '<input class="video-proc" placeholder="Ex: Toxina Botulínica" value="' + (v.procedure || '').replace(/"/g, '&quot;') + '">' +
+            '<input class="video-url" placeholder="https://youtube.com/..." value="' + (v.url || '').replace(/"/g, '&quot;') + '">' +
+            '<button class="btn-remove-video" onclick="removeVideo(' + i + ')" aria-label="Remover">✕</button>' +
+        '</div>'
+    ).join('');
+}
+
+function addVideo() {
+    if (!config.videos) config.videos = [];
+    config.videos.push({ procedure: '', url: '' });
+    renderVideos();
+    // Foca no último input de procedimento
+    const inputs = document.querySelectorAll('.video-proc');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+function removeVideo(i) {
+    if (!config.videos) return;
+    config.videos.splice(i, 1);
+    renderVideos();
+}
+
+// ── Toast ──
+function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('visible');
+    setTimeout(() => t.classList.remove('visible'), 3000);
+}
+</script>
+</body>
+</html>

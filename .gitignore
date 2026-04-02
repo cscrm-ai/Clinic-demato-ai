@@ -1,0 +1,11 @@
+.env
+.env.local
+__pycache__/
+*.pyc
+.vercel/
+uploads/
+.claude/
+.superpowers/
+uv.lock
+.DS_Store
+.vercel
