@@ -58,27 +58,131 @@ body {
 }
 .login-card .btn-login:hover { background: #2A2320; }
 .login-error { color: #E74C3C; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
-.magic-link-sent {
-    display: none;
-    background: #F0FDF4;
-    border: 1px solid #86EFAC;
-    border-radius: 0.5rem;
-    padding: 0.875rem 1rem;
-    font-size: 0.88rem;
-    color: #166534;
-    margin-top: 0.75rem;
-    line-height: 1.5;
-}
 
 /* ── Dashboard ── */
 .dashboard { display: none; }
-.dashboard.active { display: block; }
+.dashboard.active { display: flex; min-height: 100vh; }
 .login-screen.hidden { display: none; }
 
-.top-bar {
+/* ── Sidebar ── */
+.sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid #E8E8E8;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    z-index: 20;
+    overflow-y: auto;
+}
+.sidebar-brand {
+    padding: 1.25rem 1rem 1rem;
+    border-bottom: 1px solid #F0F0F0;
+}
+.sidebar-brand-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #3A3330;
+    display: block;
+    margin-bottom: 0.3rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sidebar-brand-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: #F0EBE3;
+    color: #827870;
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.25rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.sidebar-nav {
+    flex: 1;
+    padding: 0.75rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+.sidebar-nav-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border: none;
+    background: none;
+    border-radius: 0.5rem;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+}
+.sidebar-nav-btn:hover { background: #F8F9FA; color: #3A3330; }
+.sidebar-nav-btn.active { background: #F0EBE3; color: #3A3330; font-weight: 600; }
+.nav-icon { font-size: 1rem; flex-shrink: 0; }
+.nav-label { flex: 1; }
+.sidebar-footer {
+    padding: 0.75rem 0.5rem;
+    border-top: 1px solid #F0F0F0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.btn-sidebar-preview {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: #F0EBE3;
+    color: #3A3330;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: center;
+    transition: background 0.2s;
+}
+.btn-sidebar-preview:hover { background: #E5DDD5; }
+.btn-sidebar-logout {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    color: #999;
+    border: 1px solid #E0E0E0;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: center;
+    transition: all 0.2s;
+}
+.btn-sidebar-logout:hover { border-color: #3A3330; color: #3A3330; }
+
+/* ── Main content ── */
+.main-content {
+    margin-left: 220px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ── Inner top bar ── */
+.inner-top-bar {
     background: #fff;
     border-bottom: 1px solid #E8E8E8;
-    padding: 1rem 2rem;
+    padding: 0.875rem 2rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -86,8 +190,11 @@ body {
     top: 0;
     z-index: 10;
 }
-.top-bar h1 { font-size: 1.15rem; font-weight: 700; }
-.top-bar .actions { display: flex; gap: 0.75rem; }
+.inner-top-bar h1 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #3A3330;
+}
 .btn-save {
     padding: 0.5rem 1.25rem;
     background: #D99C94;
@@ -100,27 +207,6 @@ body {
     font-family: inherit;
 }
 .btn-save:hover { filter: brightness(1.08); }
-.btn-preview {
-    padding: 0.5rem 1.25rem;
-    background: #F0EBE3;
-    color: #3A3330;
-    border: none;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    font-family: inherit;
-}
-.btn-logout {
-    padding: 0.5rem 1rem;
-    background: transparent;
-    color: #999;
-    border: 1px solid #E0E0E0;
-    border-radius: 0.5rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-    font-family: inherit;
-}
 
 /* ── Past Due Banner ── */
 .banner-past-due {
@@ -139,21 +225,27 @@ body {
     cursor: pointer;
 }
 
-.content {
+/* ── Tab sections ── */
+.tab-sections {
     max-width: 720px;
     margin: 0 auto;
+    width: 100%;
     padding: 2rem 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
 }
+.tab-section { display: none; }
+.tab-section.active-section { display: block; }
 
 .card {
     background: #fff;
     border-radius: 0.75rem;
     padding: 1.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    margin-bottom: 1.5rem;
 }
+.card:last-child { margin-bottom: 0; }
 .card h2 {
     font-size: 1rem;
     font-weight: 700;
@@ -314,46 +406,7 @@ body {
     transition: background .2s;
 }
 .btn-add-video:hover { background: #E5DDD5; }
-.proc-list { display: flex; flex-direction: column; gap: .6rem; }
-.proc-entry {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: .5rem;
-    align-items: center;
-}
-.proc-entry input {
-    padding: .55rem .75rem;
-    border: 1.5px solid #E0E0E0;
-    border-radius: .5rem;
-    font-size: .85rem;
-    font-family: inherit;
-    color: #3A3330;
-    transition: border-color .2s;
-}
-.proc-entry input:focus { outline: none; border-color: #D99C94; }
-.proc-entry select {
-    padding: .55rem .5rem;
-    border: 1.5px solid #E0E0E0;
-    border-radius: .5rem;
-    font-size: .85rem;
-    font-family: inherit;
-    color: #3A3330;
-    background: #fff;
-    cursor: pointer;
-}
-.proc-header {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: .5rem;
-    margin-bottom: .25rem;
-}
-.proc-header span {
-    font-size: .72rem;
-    font-weight: 600;
-    color: #999;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-}
+
 .video-header {
     display: grid;
     grid-template-columns: 1fr 1fr auto;
@@ -368,6 +421,125 @@ body {
     letter-spacing: .04em;
     padding-left: .1rem;
 }
+
+/* ── Procedures new table design ── */
+.proc-table-header {
+    display: grid;
+    grid-template-columns: 1fr 120px 150px 100px 60px 36px;
+    gap: .5rem;
+    padding: .25rem .5rem;
+    margin-bottom: .35rem;
+    align-items: center;
+}
+.proc-table-header span {
+    font-size: .7rem;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.proc-row {
+    display: grid;
+    grid-template-columns: 1fr 120px 150px 100px 60px 36px;
+    gap: .5rem;
+    align-items: center;
+    padding: .45rem .5rem;
+    border-radius: .5rem;
+    transition: background .15s;
+}
+.proc-row:hover { background: #FAFAFA; }
+.proc-row-nome {
+    font-size: .875rem;
+    color: #3A3330;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.proc-custom-nome {
+    width: 100%;
+    padding: .35rem .55rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: .4rem;
+    font-size: .875rem;
+    font-family: inherit;
+    color: #3A3330;
+    transition: border-color .2s;
+}
+.proc-custom-nome:focus { outline: none; border-color: #D99C94; }
+.proc-marca {
+    width: 100%;
+    padding: .35rem .55rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: .4rem;
+    font-size: .82rem;
+    font-family: inherit;
+    color: #3A3330;
+    transition: border-color .2s;
+    background: #fff;
+}
+.proc-marca:focus { outline: none; border-color: #D99C94; }
+.proc-marca::placeholder { color: #bbb; }
+.proc-video {
+    width: 100%;
+    padding: .35rem .55rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: .4rem;
+    font-size: .78rem;
+    font-family: inherit;
+    color: #3A3330;
+    transition: border-color .2s;
+    background: #fff;
+}
+.proc-video:focus { outline: none; border-color: #D99C94; }
+.proc-video::placeholder { color: #bbb; }
+.proc-custom-tipo {
+    width: 100%;
+    padding: .35rem .4rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: .4rem;
+    font-size: .78rem;
+    font-family: inherit;
+    color: #3A3330;
+    background: #fff;
+    cursor: pointer;
+}
+.proc-custom-tipo:focus { outline: none; border-color: #D99C94; }
+
+/* tipo-badge */
+.tipo-badge { padding: .2rem .5rem; border-radius: .3rem; font-size: .72rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
+.tipo-INJETAVEL { background: #FEE2E2; color: #B91C1C; }
+.tipo-LASER { background: #FEF3C7; color: #92400E; }
+.tipo-TECNOLOGIA { background: #DBEAFE; color: #1E40AF; }
+.tipo-PEELING { background: #D1FAE5; color: #065F46; }
+.tipo-TOPICO { background: #EDE9FE; color: #5B21B6; }
+.tipo-OUTROS { background: #F3F4F6; color: #374151; }
+
+/* toggle switch */
+.toggle { position: relative; display: inline-block; width: 40px; height: 22px; cursor: pointer; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 22px; transition: .2s; }
+.toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: .2s; }
+.toggle input:checked + .toggle-slider { background: #D99C94; }
+.toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
+
+.btn-remove-proc {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid #E0E0E0;
+    background: none;
+    color: #999;
+    font-size: .8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: inherit;
+    transition: all .2s;
+}
+.btn-remove-proc:hover { border-color: #E74C3C; color: #E74C3C; }
+.btn-remove-proc.hidden { visibility: hidden; pointer-events: none; }
 
 /* ── Histórico de Análises ── */
 .analyses-grid {
@@ -444,9 +616,7 @@ body {
     border: 1px solid rgba(217,156,148,.2);
 }
 .analysis-findings { display: flex; flex-direction: column; gap: .35rem; }
-.analysis-finding {
-    font-size: .8rem;
-}
+.analysis-finding { font-size: .8rem; }
 .analysis-finding-zone {
     font-weight: 600;
     color: #3A3330;
@@ -518,9 +688,7 @@ body {
     font-weight: 700;
     color: #3A3330;
 }
-.usage-bar-wrap {
-    margin-bottom: 1rem;
-}
+.usage-bar-wrap { margin-bottom: 1rem; }
 .usage-bar-label {
     display: flex;
     justify-content: space-between;
@@ -565,15 +733,9 @@ body {
     border: none;
     transition: filter .2s;
 }
-.btn-billing-primary {
-    background: #3A3330;
-    color: #fff;
-}
+.btn-billing-primary { background: #3A3330; color: #fff; }
 .btn-billing-primary:hover { filter: brightness(1.15); }
-.btn-billing-secondary {
-    background: #F0EBE3;
-    color: #3A3330;
-}
+.btn-billing-secondary { background: #F0EBE3; color: #3A3330; }
 .btn-billing-secondary:hover { background: #E5DDD5; }
 
 .invoices-table {
@@ -597,11 +759,7 @@ body {
     color: #3A3330;
 }
 .invoices-table tr:last-child td { border-bottom: none; }
-.invoices-table a {
-    color: #D99C94;
-    text-decoration: none;
-    font-size: .78rem;
-}
+.invoices-table a { color: #D99C94; text-decoration: none; font-size: .78rem; }
 .invoices-table a:hover { text-decoration: underline; }
 .inv-badge {
     display: inline-flex;
@@ -644,11 +802,7 @@ body {
     overflow-y: auto;
     position: relative;
 }
-.upgrade-modal-inner h2 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-}
+.upgrade-modal-inner h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 1.5rem; }
 .btn-modal-close {
     position: absolute;
     top: 1.25rem;
@@ -687,16 +841,8 @@ body {
     color: #3A3330;
     margin-bottom: .25rem;
 }
-.plan-card-price span {
-    font-size: .8rem;
-    font-weight: 400;
-    color: #999;
-}
-.plan-card-analyses {
-    font-size: .8rem;
-    color: #888;
-    margin-bottom: 1rem;
-}
+.plan-card-price span { font-size: .8rem; font-weight: 400; color: #999; }
+.plan-card-analyses { font-size: .8rem; color: #888; margin-bottom: 1rem; }
 .btn-plan-select {
     width: 100%;
     padding: .55rem;
@@ -750,181 +896,225 @@ body {
 
 <!-- DASHBOARD -->
 <div class="dashboard" id="dashboard">
-    <div class="top-bar">
-        <h1>Personalizar Clínica</h1>
-        <div class="actions">
-            <button class="btn-preview" id="btnPreview">Visualizar</button>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span class="sidebar-brand-name" id="sidebarClinicName">Painel Admin</span>
+            <span class="sidebar-brand-badge">allbele.app</span>
+        </div>
+        <nav class="sidebar-nav">
+            <button class="sidebar-nav-btn active" data-tab="tab-inicio">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Início</span>
+            </button>
+            <button class="sidebar-nav-btn" data-tab="tab-aparencia">
+                <span class="nav-icon">🎨</span>
+                <span class="nav-label">Aparência</span>
+            </button>
+            <button class="sidebar-nav-btn" data-tab="tab-procedimentos">
+                <span class="nav-icon">💉</span>
+                <span class="nav-label">Procedimentos</span>
+            </button>
+            <button class="sidebar-nav-btn" data-tab="tab-historico">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Histórico</span>
+            </button>
+            <button class="sidebar-nav-btn" data-tab="tab-financeiro">
+                <span class="nav-icon">💳</span>
+                <span class="nav-label">Financeiro</span>
+            </button>
+            <button class="sidebar-nav-btn" data-tab="tab-config">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Configurações</span>
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn-sidebar-preview" id="btnPreview">Visualizar</button>
+            <button class="btn-sidebar-logout" id="btnLogout">Sair</button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        <div class="inner-top-bar">
+            <h1 id="sectionTitle">Início</h1>
             <button class="btn-save" id="btnSave">Salvar</button>
-            <button class="btn-logout" id="btnLogout">Sair</button>
-        </div>
-    </div>
-
-    <div class="content">
-
-        <!-- Stats -->
-        <div class="card">
-            <h2>Estatísticas</h2>
-            <div class="stat-grid">
-                <div class="stat-item">
-                    <div class="stat-value" id="statAnalyses">0</div>
-                    <div class="stat-label">Análises realizadas</div>
-                </div>
-            </div>
         </div>
 
-        <!-- Identidade -->
-        <div class="card">
-            <h2>Identidade</h2>
-            <div class="field">
-                <label>Nome da Clínica</label>
-                <input type="text" id="cfgClinicName" placeholder="Clínica Bella">
-            </div>
-            <div class="field">
-                <label>Texto de Boas-vindas</label>
-                <textarea id="cfgWelcome" placeholder="Bem-vinda! Descubra o melhor para sua pele."></textarea>
-            </div>
-            <div class="field">
-                <label>Logo</label>
-                <div class="logo-upload">
-                    <div class="logo-preview" id="logoPreview">
-                        <span class="placeholder">Logo</span>
+        <div class="tab-sections">
+
+            <!-- TAB: Início -->
+            <div class="tab-section" id="tab-inicio" style="display:block;">
+                <div class="card">
+                    <h2>Estatísticas</h2>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="statAnalyses">0</div>
+                            <div class="stat-label">Análises realizadas</div>
+                        </div>
                     </div>
-                    <button class="btn-upload" id="btnUploadLogo">Upload Logo</button>
-                    <input type="file" id="logoInput" accept="image/*" style="display:none;">
                 </div>
             </div>
-        </div>
 
-        <!-- Cores -->
-        <div class="card">
-            <h2>Cores</h2>
-            <div class="color-grid">
-                <div class="color-field">
-                    <label>Primária</label>
-                    <input type="color" id="cfgColorPrimary" value="#D9BFB2">
+            <!-- TAB: Aparência -->
+            <div class="tab-section" id="tab-aparencia">
+                <!-- Identidade -->
+                <div class="card">
+                    <h2>Identidade</h2>
+                    <div class="field">
+                        <label>Nome da Clínica</label>
+                        <input type="text" id="cfgClinicName" placeholder="Clínica Bella">
+                    </div>
+                    <div class="field">
+                        <label>Texto de Boas-vindas</label>
+                        <textarea id="cfgWelcome" placeholder="Bem-vinda! Descubra o melhor para sua pele."></textarea>
+                    </div>
+                    <div class="field">
+                        <label>Logo</label>
+                        <div class="logo-upload">
+                            <div class="logo-preview" id="logoPreview">
+                                <span class="placeholder">Logo</span>
+                            </div>
+                            <button class="btn-upload" id="btnUploadLogo">Upload Logo</button>
+                            <input type="file" id="logoInput" accept="image/*" style="display:none;">
+                        </div>
+                    </div>
                 </div>
-                <div class="color-field">
-                    <label>Secundária</label>
-                    <input type="color" id="cfgColorSecondary" value="#827870">
-                </div>
-                <div class="color-field">
-                    <label>Destaque</label>
-                    <input type="color" id="cfgColorAccent" value="#D99C94">
-                </div>
-                <div class="color-field">
-                    <label>Fundo</label>
-                    <input type="color" id="cfgColorBg" value="#F0EBE3">
-                </div>
-                <div class="color-field">
-                    <label>Texto</label>
-                    <input type="color" id="cfgColorText" value="#3A3330">
-                </div>
-            </div>
-        </div>
 
-        <!-- Fonte -->
-        <div class="card">
-            <h2>Tipografia</h2>
-            <div class="field">
-                <label>Fonte Principal</label>
-                <select id="cfgFont"></select>
-            </div>
-            <div class="field" id="fontPreviewField">
-                <label>Preview</label>
-                <div id="fontPreview" style="padding:1rem;background:#FAFAFA;border-radius:0.5rem;font-size:1rem;line-height:1.6;">
-                    Analise de pele personalizada com inteligencia artificial.
+                <!-- Cores -->
+                <div class="card">
+                    <h2>Cores</h2>
+                    <div class="color-grid">
+                        <div class="color-field">
+                            <label>Primária</label>
+                            <input type="color" id="cfgColorPrimary" value="#D9BFB2">
+                        </div>
+                        <div class="color-field">
+                            <label>Secundária</label>
+                            <input type="color" id="cfgColorSecondary" value="#827870">
+                        </div>
+                        <div class="color-field">
+                            <label>Destaque</label>
+                            <input type="color" id="cfgColorAccent" value="#D99C94">
+                        </div>
+                        <div class="color-field">
+                            <label>Fundo</label>
+                            <input type="color" id="cfgColorBg" value="#F0EBE3">
+                        </div>
+                        <div class="color-field">
+                            <label>Texto</label>
+                            <input type="color" id="cfgColorText" value="#3A3330">
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Contato -->
-        <div class="card">
-            <h2>Rodapé / Contato</h2>
-            <div class="field">
-                <label>Telefone</label>
-                <input type="text" id="cfgPhone" placeholder="(47) 3333-4444">
-            </div>
-            <div class="field">
-                <label>Instagram</label>
-                <input type="text" id="cfgInstagram" placeholder="@clinicabella">
-            </div>
-            <div class="field">
-                <label>Endereço</label>
-                <input type="text" id="cfgAddress" placeholder="Rua das Flores, 123">
-            </div>
-        </div>
-
-        <!-- Disclaimer -->
-        <div class="card">
-            <h2>Aviso Legal</h2>
-            <div class="field">
-                <label>Texto de Disclaimer</label>
-                <textarea id="cfgDisclaimer" rows="4"></textarea>
-            </div>
-        </div>
-
-        <!-- Financeiro -->
-        <div class="card" id="billingCard">
-            <h2>Financeiro &amp; Assinatura</h2>
-            <div class="billing-card-header">
-                <span class="billing-plan-name" id="billingPlanName">—</span>
-                <span class="plan-badge" id="billingStatusBadge"></span>
-            </div>
-            <div class="usage-bar-wrap">
-                <div class="usage-bar-label">
-                    <span>Análises este mês</span>
-                    <span id="billingUsageLabel">— / —</span>
-                </div>
-                <div class="usage-bar">
-                    <div class="usage-bar-fill" id="billingUsageFill" style="width:0%"></div>
+                <!-- Tipografia -->
+                <div class="card">
+                    <h2>Tipografia</h2>
+                    <div class="field">
+                        <label>Fonte Principal</label>
+                        <select id="cfgFont"></select>
+                    </div>
+                    <div class="field" id="fontPreviewField">
+                        <label>Preview</label>
+                        <div id="fontPreview" style="padding:1rem;background:#FAFAFA;border-radius:0.5rem;font-size:1rem;line-height:1.6;">
+                            Analise de pele personalizada com inteligencia artificial.
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="billing-meta" id="billingMeta"></div>
-            <div class="billing-actions">
-                <button class="btn-billing btn-billing-primary" onclick="openBillingPortal()">Gerenciar Assinatura</button>
-                <button class="btn-billing btn-billing-secondary" onclick="openUpgradeModal()">Ver Planos / Upgrade</button>
-            </div>
-            <div style="font-size:.78rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem">Faturas</div>
-            <div id="invoicesContainer"><div class="invoices-empty">Carregando faturas...</div></div>
-        </div>
 
-        <!-- Histórico de Análises -->
-        <div class="card">
-            <h2>Histórico de Análises</h2>
-            <p style="font-size:.85rem;color:#888;margin-bottom:1rem">Registro de todas as análises realizadas com imagem, marcadores e procedimentos sugeridos.</p>
-            <div id="analysesContainer">
-                <div class="analyses-loading">Carregando histórico...</div>
+            <!-- TAB: Procedimentos -->
+            <div class="tab-section" id="tab-procedimentos">
+                <div class="card">
+                    <h2>Procedimentos da Clínica</h2>
+                    <p style="font-size:.85rem;color:#888;margin-bottom:1rem">Ative ou desative os procedimentos e tecnologias que sua clínica oferece. A IA recomendará <strong>APENAS</strong> os procedimentos ativos. Adicione procedimentos personalizados com o botão abaixo.</p>
+                    <div class="proc-table-header">
+                        <span>Nome do Procedimento</span>
+                        <span>Marca / Equipamento</span>
+                        <span>Vídeo (URL)</span>
+                        <span>Tipo</span>
+                        <span>Status</span>
+                        <span></span>
+                    </div>
+                    <div id="procList"></div>
+                    <button class="btn-add-video" onclick="addProc()">+ Adicionar Procedimento</button>
+                </div>
             </div>
-        </div>
 
-        <!-- Procedimentos da Clínica -->
-        <div class="card">
-            <h2>Procedimentos da Clínica</h2>
-            <p style="font-size:.85rem;color:#888;margin-bottom:1rem">Cadastre os procedimentos e tecnologias que sua clínica oferece. A IA recomendará <strong>APENAS</strong> o que estiver nesta lista. Se vazia, a IA sugere livremente.</p>
-            <div class="proc-header">
-                <span>Nome do Procedimento / Tecnologia</span>
-                <span>Tipo</span>
-                <span></span>
+            <!-- TAB: Vídeos -->
+            <!-- TAB: Histórico -->
+            <div class="tab-section" id="tab-historico">
+                <div class="card">
+                    <h2>Histórico de Análises</h2>
+                    <p style="font-size:.85rem;color:#888;margin-bottom:1rem">Registro de todas as análises realizadas com imagem, marcadores e procedimentos sugeridos.</p>
+                    <div id="analysesContainer">
+                        <div class="analyses-loading">Carregando histórico...</div>
+                    </div>
+                </div>
             </div>
-            <div class="proc-list" id="procList"></div>
-            <button class="btn-add-video" onclick="addProc()">+ Adicionar Procedimento</button>
-        </div>
 
-        <!-- Vídeos dos Procedimentos -->
-        <div class="card">
-            <h2>Vídeos dos Procedimentos</h2>
-            <p style="font-size:.85rem;color:#888;margin-bottom:1rem">Vincule um vídeo (YouTube ou outro link) a cada procedimento. O botão "&#9654; Assistir" aparecerá automaticamente no laudo quando o procedimento for sugerido.</p>
-            <div class="video-header">
-                <span>Nome do Procedimento</span>
-                <span>URL do Vídeo</span>
-                <span></span>
+            <!-- TAB: Financeiro -->
+            <div class="tab-section" id="tab-financeiro">
+                <div class="card" id="billingCard">
+                    <h2>Financeiro &amp; Assinatura</h2>
+                    <div class="billing-card-header">
+                        <span class="billing-plan-name" id="billingPlanName">—</span>
+                        <span class="plan-badge" id="billingStatusBadge"></span>
+                    </div>
+                    <div class="usage-bar-wrap">
+                        <div class="usage-bar-label">
+                            <span>Análises este mês</span>
+                            <span id="billingUsageLabel">— / —</span>
+                        </div>
+                        <div class="usage-bar">
+                            <div class="usage-bar-fill" id="billingUsageFill" style="width:0%"></div>
+                        </div>
+                    </div>
+                    <div class="billing-meta" id="billingMeta"></div>
+                    <div class="billing-actions">
+                        <button class="btn-billing btn-billing-primary" onclick="openBillingPortal()">Gerenciar Assinatura</button>
+                        <button class="btn-billing btn-billing-secondary" onclick="openUpgradeModal()">Ver Planos / Upgrade</button>
+                    </div>
+                    <div style="font-size:.78rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem">Faturas</div>
+                    <div id="invoicesContainer"><div class="invoices-empty">Carregando faturas...</div></div>
+                </div>
             </div>
-            <div class="video-list" id="videoList"></div>
-            <button class="btn-add-video" onclick="addVideo()">+ Adicionar Vídeo</button>
-        </div>
 
-    </div>
-</div>
+            <!-- TAB: Configurações -->
+            <div class="tab-section" id="tab-config">
+                <!-- Rodapé / Contato -->
+                <div class="card">
+                    <h2>Rodapé / Contato</h2>
+                    <div class="field">
+                        <label>Telefone</label>
+                        <input type="text" id="cfgPhone" placeholder="(47) 3333-4444">
+                    </div>
+                    <div class="field">
+                        <label>Instagram</label>
+                        <input type="text" id="cfgInstagram" placeholder="@clinicabella">
+                    </div>
+                    <div class="field">
+                        <label>Endereço</label>
+                        <input type="text" id="cfgAddress" placeholder="Rua das Flores, 123">
+                    </div>
+                </div>
+
+                <!-- Aviso Legal -->
+                <div class="card">
+                    <h2>Aviso Legal</h2>
+                    <div class="field">
+                        <label>Texto de Disclaimer</label>
+                        <textarea id="cfgDisclaimer" rows="4"></textarea>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /tab-sections -->
+    </div><!-- /main-content -->
+
+</div><!-- /dashboard -->
 
 <!-- UPGRADE MODAL -->
 <div class="upgrade-modal" id="upgradeModal">
@@ -959,6 +1149,33 @@ body {
 <script>
 let config = {};
 let fontOptions = [];
+let _fullProcList = [];
+
+const DEFAULT_PROCEDURES = [
+    { nome: 'Toxina Botulínica', tipo: 'INJETAVEL' },
+    { nome: 'Preenchedor de Ácido Hialurônico', tipo: 'INJETAVEL' },
+    { nome: 'Preenchedor Labial', tipo: 'INJETAVEL' },
+    { nome: 'Preenchedor Malar', tipo: 'INJETAVEL' },
+    { nome: 'Preenchedor Temporal', tipo: 'INJETAVEL' },
+    { nome: 'Bioestimuladores (Sculptra / Radiesse)', tipo: 'INJETAVEL' },
+    { nome: 'Carboxiterapia', tipo: 'INJETAVEL' },
+    { nome: 'Fios de PDO/PLLA (Thread Lift)', tipo: 'INJETAVEL' },
+    { nome: 'Laser Fracionado', tipo: 'LASER' },
+    { nome: 'Laser CO2 Fracionado', tipo: 'LASER' },
+    { nome: 'Laser Nd:YAG', tipo: 'LASER' },
+    { nome: 'Laser Vascular', tipo: 'LASER' },
+    { nome: 'IPL (Luz Intensa Pulsada)', tipo: 'TECNOLOGIA' },
+    { nome: 'HIFU (Ultrassom Microfocado)', tipo: 'TECNOLOGIA' },
+    { nome: 'Radiofrequência', tipo: 'TECNOLOGIA' },
+    { nome: 'Radiofrequência Fracionada', tipo: 'TECNOLOGIA' },
+    { nome: 'Microagulhamento', tipo: 'TECNOLOGIA' },
+    { nome: 'Peeling Químico', tipo: 'PEELING' },
+    { nome: 'Peeling de TCA', tipo: 'PEELING' },
+    { nome: 'Peeling Superficial', tipo: 'PEELING' },
+    { nome: 'Skincare Cosmecêutico', tipo: 'TOPICO' },
+    { nome: 'Fotoprotetor', tipo: 'TOPICO' },
+    { nome: 'Limpeza de Pele Profissional', tipo: 'OUTROS' },
+];
 
 // ── Cookie helpers ──
 function setCookie(name, value, days) {
@@ -977,6 +1194,18 @@ function deleteCookie(name) {
 function getToken() {
     return getCookie('sb-access-token');
 }
+
+// ── Sidebar tab switching ──
+document.querySelectorAll('.sidebar-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tabId = btn.dataset.tab;
+        document.querySelectorAll('.sidebar-nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-section').forEach(s => s.style.display = 'none');
+        btn.classList.add('active');
+        document.getElementById(tabId).style.display = 'block';
+        document.getElementById('sectionTitle').textContent = btn.querySelector('.nav-label').textContent;
+    });
+});
 
 // ── Page load: check session ──
 (function checkSession() {
@@ -1059,6 +1288,9 @@ function populateForm() {
     document.getElementById('cfgClinicName').value = config.clinic_name || '';
     document.getElementById('cfgWelcome').value = config.welcome_text || '';
 
+    // Update sidebar clinic name
+    document.getElementById('sidebarClinicName').textContent = config.clinic_name || 'Painel Admin';
+
     const colors = config.colors || {};
     document.getElementById('cfgColorPrimary').value = colors.primary || '#D99C94';
     document.getElementById('cfgColorSecondary').value = colors.secondary || '#827870';
@@ -1081,7 +1313,6 @@ function populateForm() {
     document.getElementById('cfgDisclaimer').value = config.disclaimer || '';
 
     renderProcs();
-    renderVideos();
 
     if (config.logo_url) {
         document.getElementById('logoPreview').innerHTML = '<img src="' + config.logo_url + '">';
@@ -1136,6 +1367,37 @@ document.getElementById('logoInput').addEventListener('change', async (e) => {
 document.getElementById('btnSave').addEventListener('click', saveConfig);
 
 async function saveConfig() {
+    // Sync marca e vídeo para TODAS as linhas (default + custom)
+    document.querySelectorAll('.proc-marca').forEach(input => {
+        const idx = parseInt(input.dataset.marcaIdx);
+        if (idx >= 0 && idx < _fullProcList.length) _fullProcList[idx].marca = input.value.trim();
+    });
+    document.querySelectorAll('.proc-video').forEach(input => {
+        const idx = parseInt(input.dataset.videoIdx);
+        if (idx >= 0 && idx < _fullProcList.length) _fullProcList[idx].video = input.value.trim();
+    });
+
+    // Sync custom proc names/tipos
+    document.querySelectorAll('.proc-row[data-custom-idx]').forEach(row => {
+        const idx = parseInt(row.dataset.customIdx);
+        const nameInput = row.querySelector('.proc-custom-nome');
+        const tipoSelect = row.querySelector('.proc-custom-tipo');
+        if (nameInput && idx >= 0 && idx < _fullProcList.length) {
+            _fullProcList[idx].nome = nameInput.value.trim();
+        }
+        if (tipoSelect && idx >= 0 && idx < _fullProcList.length) {
+            _fullProcList[idx].tipo = tipoSelect.value;
+        }
+    });
+
+    // Sync toggle states
+    document.querySelectorAll('.proc-toggle').forEach(toggle => {
+        const idx = parseInt(toggle.dataset.idx);
+        if (idx >= 0 && idx < _fullProcList.length) {
+            _fullProcList[idx].ativo = toggle.checked;
+        }
+    });
+
     const data = {
         clinic_name: document.getElementById('cfgClinicName').value,
         welcome_text: document.getElementById('cfgWelcome').value,
@@ -1155,14 +1417,14 @@ async function saveConfig() {
         },
         disclaimer: document.getElementById('cfgDisclaimer').value,
         analyses_count: config.analyses_count || 0,
-        procedures_catalog: Array.from(document.querySelectorAll('.proc-entry')).map(row => ({
-            nome: row.querySelector('.proc-nome').value.trim(),
-            tipo: row.querySelector('.proc-tipo').value,
-        })).filter(p => p.nome),
-        videos: Array.from(document.querySelectorAll('.video-entry')).map(row => ({
-            procedure: row.querySelector('.video-proc').value.trim(),
-            url: row.querySelector('.video-url').value.trim(),
-        })).filter(v => v.procedure || v.url),
+        procedures_catalog: _fullProcList.map(p => ({
+            nome:   p.nome,
+            tipo:   p.tipo,
+            marca:  p.marca || '',
+            video:  p.video || '',
+            ativo:  p.ativo,
+            padrao: p.padrao,
+        })),
     };
 
     try {
@@ -1398,68 +1660,120 @@ async function deleteAnalysis(id) {
 }
 
 // ── Procedures Catalog ──
+const TIPOS = ['INJETAVEL', 'LASER', 'TECNOLOGIA', 'PEELING', 'TOPICO', 'OUTROS'];
+const TIPO_LABELS = {
+    'INJETAVEL': 'Injetável',
+    'LASER': 'Laser',
+    'TECNOLOGIA': 'Tecnologia',
+    'PEELING': 'Peeling',
+    'TOPICO': 'Tópico',
+    'OUTROS': 'Outros',
+};
+
 function renderProcs() {
-    const procs = config.procedures_catalog || [];
+    const catalog = config.procedures_catalog || [];
     const list = document.getElementById('procList');
-    const tipos = ['INJETAVEL','LASER','TECNOLOGIA','PEELING','TOPICO','OUTROS'];
-    if (!procs.length) {
-        list.innerHTML = '<p style="font-size:.82rem;color:#bbb;padding:.25rem 0">Nenhum procedimento cadastrado — IA sugere livremente.</p>';
+
+    // Build the full merged list
+    const merged = DEFAULT_PROCEDURES.map(def => {
+        const found = catalog.find(c => c.nome === def.nome && c.padrao !== false);
+        return {
+            nome:   def.nome,
+            tipo:   def.tipo,
+            marca:  found ? (found.marca || '') : '',
+            video:  found ? (found.video || '') : '',
+            ativo:  found !== undefined ? found.ativo : true,
+            padrao: true,
+        };
+    });
+
+    // Append custom (non-default) entries
+    catalog.forEach(c => {
+        if (c.padrao === false) {
+            merged.push({
+                nome:   c.nome,
+                tipo:   c.tipo || 'OUTROS',
+                marca:  c.marca || '',
+                video:  c.video || '',
+                ativo:  c.ativo !== false,
+                padrao: false,
+            });
+        }
+    });
+
+    _fullProcList = merged;
+
+    if (!merged.length) {
+        list.innerHTML = '<p style="font-size:.82rem;color:#bbb;padding:.25rem 0">Nenhum procedimento.</p>';
         return;
     }
-    list.innerHTML = procs.map((p, i) =>
-        '<div class="proc-entry">' +
-            '<input class="proc-nome" placeholder="Ex: Toxina Botulínica" value="' + (p.nome || '').replace(/"/g, '&quot;') + '">' +
-            '<select class="proc-tipo">' +
-                tipos.map(t => '<option value="' + t + '"' + (p.tipo === t ? ' selected' : '') + '>' + t + '</option>').join('') +
-            '</select>' +
-            '<button class="btn-remove-video" onclick="removeProc(' + i + ')" aria-label="Remover">&#x2715;</button>' +
-        '</div>'
-    ).join('');
+
+    list.innerHTML = merged.map((p, i) => {
+        const tipoOptions = TIPOS.map(t =>
+            '<option value="' + t + '"' + (p.tipo === t ? ' selected' : '') + '>' + (TIPO_LABELS[t] || t) + '</option>'
+        ).join('');
+
+        const marcaVal = (p.marca || '').replace(/"/g, '&quot;');
+        const videoVal = (p.video || '').replace(/"/g, '&quot;');
+        if (p.padrao) {
+            // Default: nome estático + marca + vídeo + badge tipo + toggle
+            return '<div class="proc-row" data-idx="' + i + '">' +
+                '<span class="proc-row-nome" title="' + p.nome.replace(/"/g, '&quot;') + '">' + p.nome + '</span>' +
+                '<input class="proc-marca" placeholder="Ex: Fotona, Alma..." value="' + marcaVal + '" data-marca-idx="' + i + '">' +
+                '<input class="proc-video" placeholder="youtube.com/..." value="' + videoVal + '" data-video-idx="' + i + '">' +
+                '<span class="tipo-badge tipo-' + p.tipo + '">' + (TIPO_LABELS[p.tipo] || p.tipo) + '</span>' +
+                '<label class="toggle">' +
+                    '<input type="checkbox" class="proc-toggle" data-idx="' + i + '"' + (p.ativo ? ' checked' : '') + '>' +
+                    '<span class="toggle-slider"></span>' +
+                '</label>' +
+                '<button class="btn-remove-proc hidden" aria-hidden="true">✕</button>' +
+            '</div>';
+        } else {
+            // Custom: nome + marca + vídeo + tipo editáveis + toggle + remover
+            return '<div class="proc-row" data-custom-idx="' + i + '">' +
+                '<input class="proc-custom-nome" placeholder="Nome do procedimento" value="' + (p.nome || '').replace(/"/g, '&quot;') + '">' +
+                '<input class="proc-marca" placeholder="Ex: Fotona, Alma..." value="' + marcaVal + '" data-marca-idx="' + i + '">' +
+                '<input class="proc-video" placeholder="youtube.com/..." value="' + videoVal + '" data-video-idx="' + i + '">' +
+                '<select class="proc-custom-tipo">' + tipoOptions + '</select>' +
+                '<label class="toggle">' +
+                    '<input type="checkbox" class="proc-toggle" data-idx="' + i + '"' + (p.ativo ? ' checked' : '') + '>' +
+                    '<span class="toggle-slider"></span>' +
+                '</label>' +
+                '<button class="btn-remove-proc" onclick="removeProc(' + i + ')" aria-label="Remover">✕</button>' +
+            '</div>';
+        }
+    }).join('');
 }
 
 function addProc() {
-    if (!config.procedures_catalog) config.procedures_catalog = [];
-    config.procedures_catalog.push({ nome: '', tipo: 'INJETAVEL' });
+    _fullProcList.push({ nome: '', tipo: 'INJETAVEL', marca: '', video: '', ativo: true, padrao: false });
+    config.procedures_catalog = _fullProcList.map(p => ({ nome: p.nome, tipo: p.tipo, marca: p.marca || '', video: p.video || '', ativo: p.ativo, padrao: p.padrao }));
     renderProcs();
-    const inputs = document.querySelectorAll('.proc-nome');
+    const inputs = document.querySelectorAll('.proc-custom-nome');
     if (inputs.length) inputs[inputs.length - 1].focus();
 }
 
-function removeProc(i) {
-    if (!config.procedures_catalog) return;
-    config.procedures_catalog.splice(i, 1);
+function removeProc(idx) {
+    // Sync current state before removing
+    document.querySelectorAll('.proc-marca').forEach(input => {
+        const i = parseInt(input.dataset.marcaIdx);
+        if (i >= 0 && i < _fullProcList.length) _fullProcList[i].marca = input.value.trim();
+    });
+    document.querySelectorAll('.proc-row[data-custom-idx]').forEach(row => {
+        const i = parseInt(row.dataset.customIdx);
+        const nameInput = row.querySelector('.proc-custom-nome');
+        const tipoSelect = row.querySelector('.proc-custom-tipo');
+        if (nameInput && i >= 0 && i < _fullProcList.length) _fullProcList[i].nome = nameInput.value.trim();
+        if (tipoSelect && i >= 0 && i < _fullProcList.length) _fullProcList[i].tipo = tipoSelect.value;
+    });
+    document.querySelectorAll('.proc-toggle').forEach(toggle => {
+        const i = parseInt(toggle.dataset.idx);
+        if (i >= 0 && i < _fullProcList.length) _fullProcList[i].ativo = toggle.checked;
+    });
+
+    _fullProcList.splice(idx, 1);
+    config.procedures_catalog = _fullProcList.map(p => ({ nome: p.nome, tipo: p.tipo, marca: p.marca || '', video: p.video || '', ativo: p.ativo, padrao: p.padrao }));
     renderProcs();
-}
-
-// ── Videos ──
-function renderVideos() {
-    const videos = config.videos || [];
-    const list = document.getElementById('videoList');
-    if (!videos.length) {
-        list.innerHTML = '<p style="font-size:.82rem;color:#bbb;padding:.25rem 0">Nenhum vídeo cadastrado ainda.</p>';
-        return;
-    }
-    list.innerHTML = videos.map((v, i) =>
-        '<div class="video-entry">' +
-            '<input class="video-proc" placeholder="Ex: Toxina Botulínica" value="' + (v.procedure || '').replace(/"/g, '&quot;') + '">' +
-            '<input class="video-url" placeholder="https://youtube.com/..." value="' + (v.url || '').replace(/"/g, '&quot;') + '">' +
-            '<button class="btn-remove-video" onclick="removeVideo(' + i + ')" aria-label="Remover">&#x2715;</button>' +
-        '</div>'
-    ).join('');
-}
-
-function addVideo() {
-    if (!config.videos) config.videos = [];
-    config.videos.push({ procedure: '', url: '' });
-    renderVideos();
-    const inputs = document.querySelectorAll('.video-proc');
-    if (inputs.length) inputs[inputs.length - 1].focus();
-}
-
-function removeVideo(i) {
-    if (!config.videos) return;
-    config.videos.splice(i, 1);
-    renderVideos();
 }
 
 // ── Toast ──

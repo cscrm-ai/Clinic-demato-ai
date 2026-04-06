@@ -699,11 +699,7 @@ table.data-table {
         <div class="form-field">
             <label>Plano</label>
             <select id="ncPlan">
-                <option value="">Selecionar plano...</option>
-                <option value="free">Free</option>
-                <option value="starter">Starter</option>
-                <option value="pro">Pro</option>
-                <option value="enterprise">Enterprise</option>
+                <option value="">Carregando planos...</option>
             </select>
         </div>
         <div class="modal-result" id="newClinicResult"></div>
@@ -774,6 +770,9 @@ function handleAuthError(resp) {
     return false;
 }
 
+// ── Chart (declarado aqui para evitar TDZ antes do IIFE de checkSession) ──
+let chartInstance = null;
+
 // ── Page load: restaura sessão salva ──
 (function checkSession() {
     if (getToken()) {
@@ -819,7 +818,7 @@ async function doLogin() {
 function showDashboard() {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('dashboard').classList.add('active');
-    initChart();
+    try { initChart(); } catch(e) { console.warn('[Chart]', e); }
     loadOverview();
     loadClinics();
     loadUsage();
@@ -863,7 +862,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ── Chart ──
-let chartInstance = null;
 function initChart() {
     const ctx = document.getElementById('analysesChart').getContext('2d');
     const labels = [];
@@ -1013,6 +1011,21 @@ async function deleteClinic(id) {
     } catch (e) { toast('Erro de conex&#227;o.'); }
 }
 
+async function loadPlansIntoSelect() {
+    try {
+        const resp = await fetch('/api/super/plans', { headers: authHeaders() });
+        if (!resp.ok) return;
+        const plans = await resp.json();
+        const sel = document.getElementById('ncPlan');
+        sel.innerHTML = '<option value="">Sem plano (Free)</option>' +
+            plans.map(p =>
+                `<option value="${p.id}">${p.name}${p.price_cents ? ' — R$' + (p.price_cents/100).toFixed(0) + '/mês' : ''}</option>`
+            ).join('');
+    } catch (e) {
+        document.getElementById('ncPlan').innerHTML = '<option value="">Sem plano (Free)</option>';
+    }
+}
+
 function openNewClinicModal() {
     document.getElementById('ncSubdomain').value = '';
     document.getElementById('ncName').value = '';
@@ -1021,6 +1034,7 @@ function openNewClinicModal() {
     const result = document.getElementById('newClinicResult');
     result.style.display = 'none';
     result.className = 'modal-result';
+    loadPlansIntoSelect();
     document.getElementById('newClinicModal').classList.add('open');
 }
 function closeNewClinicModal() {
@@ -1050,7 +1064,7 @@ async function createClinic() {
         const resp = await fetch('/api/super/clinics', {
             method: 'POST',
             headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ subdomain, name, email, plan_id }),
+            body: JSON.stringify({ subdomain, name, owner_email: email, plan_id }),
         });
         if (handleAuthError(resp)) return;
         const data = await resp.json();

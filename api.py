@@ -299,6 +299,41 @@ async def admin_page():
     )
 
 
+@app.get("/set-password")
+async def set_password_page():
+    """Página para o admin da clínica definir sua senha (vinda do e-mail de convite)."""
+    html = (BASE_DIR / "templates" / "set_password.html").read_text()
+    return HTMLResponse(
+        content=html,
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
+
+
+@app.post("/api/auth/set-password")
+async def auth_set_password(request: Request):
+    """Define/altera senha usando token do link de recuperação."""
+    body        = await request.json()
+    token       = (body.get("token") or "").strip()
+    new_password = (body.get("new_password") or "").strip()
+
+    if not token or not new_password or len(new_password) < 8:
+        return JSONResponse(status_code=400, content={"error": "Token e senha (mín. 8 chars) são obrigatórios."})
+
+    db = get_db()
+    try:
+        # Verifica o token e obtém o usuário
+        user_resp = db.auth.get_user(token)
+        user_id   = str(user_resp.user.id)
+    except Exception as e:
+        return JSONResponse(status_code=401, content={"error": "Link expirado ou inválido. Solicite um novo acesso."})
+
+    try:
+        db.auth.admin.update_user_by_id(user_id, {"password": new_password})
+        return {"ok": True}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Erro ao salvar senha: {e}"})
+
+
 @app.get("/api/admin/config")
 async def admin_get_config(
     request: Request,
@@ -530,6 +565,14 @@ async def super_overview(user_id: str = Depends(require_super_admin)):
     return get_super_admin_overview()
 
 
+@app.get("/api/super/plans")
+async def super_list_plans(user_id: str = Depends(require_super_admin)):
+    """Lista planos disponíveis."""
+    db = get_db()
+    result = db.table("plans").select("id,name,price_cents").order("price_cents").execute()
+    return result.data or []
+
+
 @app.get("/api/super/clinics")
 async def super_list_clinics(
     status: str | None = None,
@@ -586,11 +629,14 @@ async def super_create_clinic(
 
     db = get_db()
 
-    # Busca plano
+    # Busca plano (plan_id pode ser UUID ou None; se inválido usa Free)
     plan = None
     if plan_id:
-        plan_result = db.table("plans").select("*").eq("id", plan_id).execute()
-        plan = plan_result.data[0] if plan_result.data else None
+        try:
+            plan_result = db.table("plans").select("*").eq("id", plan_id).execute()
+            plan = plan_result.data[0] if plan_result.data else None
+        except Exception:
+            plan = None
 
     if not plan:
         free_result = db.table("plans").select("*").eq("name", "Free").execute()
@@ -664,17 +710,14 @@ async def super_create_clinic(
         except Exception:
             pass
 
-    # Dispara magic link de boas-vindas
+    # Envia e-mail para o responsável definir a senha
     try:
-        base_domain = os.environ.get("APP_BASE_DOMAIN", "allbele.app")
-        db.auth.sign_in_with_otp({
-            "email":   owner_email,
-            "options": {
-                "email_redirect_to": f"https://{subdomain}.{base_domain}/admin"
-            },
-        })
+        base_domain  = os.environ.get("APP_BASE_DOMAIN", "allbele.app")
+        redirect_url = f"https://{base_domain}/set-password?clinic={subdomain}"
+        db.auth.reset_password_for_email(owner_email, options={"redirect_to": redirect_url})
+        print(f"[AUTH] E-mail de definição de senha enviado para {owner_email}")
     except Exception as _ml_exc:
-        print(f"[AUTH] Erro ao enviar magic link: {_ml_exc}")
+        print(f"[AUTH] Erro ao enviar e-mail de senha: {_ml_exc}")
 
     # Cria registro DNS no Cloudflare automaticamente
     dns_result = {"skipped": True}
@@ -684,11 +727,20 @@ async def super_create_clinic(
     except Exception as _dns_exc:
         print(f"[DNS] Erro ao criar registro Cloudflare: {_dns_exc}")
 
+    # Adiciona domínio no Vercel automaticamente
+    vercel_result = {"skipped": True}
+    try:
+        from vercel.domains import add_clinic_domain
+        vercel_result = add_clinic_domain(subdomain)
+    except Exception as _vercel_exc:
+        print(f"[VERCEL] Erro ao adicionar domínio: {_vercel_exc}")
+
     return {
         "ok":           True,
         "clinic":       clinic,
         "checkout_url": checkout_url,
         "dns":          dns_result,
+        "vercel":       vercel_result,
     }
 
 
@@ -763,6 +815,13 @@ async def super_delete_clinic(
         delete_clinic_dns(clinic["subdomain"])
     except Exception as _dns_exc:
         print(f"[DNS] Erro ao remover registro Cloudflare: {_dns_exc}")
+
+    # Remove domínio do Vercel
+    try:
+        from vercel.domains import remove_clinic_domain
+        remove_clinic_domain(clinic["subdomain"])
+    except Exception as _vercel_exc:
+        print(f"[VERCEL] Erro ao remover domínio: {_vercel_exc}")
 
     return {"ok": True}
 

@@ -270,10 +270,10 @@ def analyze_image(
 
     catalog_block = ""
     if procedures_catalog:
-        valid_items = [p for p in procedures_catalog if p.get("nome")]
+        valid_items = [p for p in procedures_catalog if p.get("nome") and p.get("ativo", True)]
         if valid_items:
             items_str = "\n".join(
-                f"  - {p['nome']} [{p.get('tipo', 'OUTROS')}]"
+                f"  - {p['nome']}{' — ' + p['marca'] if p.get('marca') else ''} [{p.get('tipo', 'OUTROS')}]"
                 for p in valid_items
             )
             catalog_block = f"""
