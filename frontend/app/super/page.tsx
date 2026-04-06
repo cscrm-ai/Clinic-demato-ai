@@ -314,15 +314,26 @@ export default function SuperAdminPage() {
             <h1 className="text-2xl font-bold text-[#3A3330] mb-6">Dashboard</h1>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {[
-                { label: "Análises (30d)", value: overview?.analyses_this_month ?? "—" },
-                { label: "Clínicas ativas", value: overview?.active_clinics ?? "—" },
+                { label: "Análises (30d)", value: (() => {
+                  const v = overview?.analyses_this_month;
+                  if (v == null) return "—";
+                  if (typeof v === "object") return (v as { analyses_count?: number }).analyses_count ?? "—";
+                  return v;
+                })() },
+                { label: "Clínicas ativas", value: (() => {
+                  const v = overview?.active_clinics;
+                  return (v != null && typeof v !== "object") ? v : "—";
+                })() },
                 {
                   label: "MRR",
                   value: overview?.mrr_cents
                     ? `R$ ${(Number(overview.mrr_cents) / 100).toFixed(0)}`
                     : "—",
                 },
-                { label: "Inadimplentes", value: overview?.past_due_clinics ?? "—" },
+                { label: "Inadimplentes", value: (() => {
+                  const v = overview?.past_due_clinics;
+                  return (v != null && typeof v !== "object") ? v : "—";
+                })() },
               ].map((m) => (
                 <Card key={m.label}>
                   <CardContent className="pt-6">
