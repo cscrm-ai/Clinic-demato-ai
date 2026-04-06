@@ -5,7 +5,6 @@ import { applyBranding, type ClinicConfig } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
 type ProcedimentoIndicado = {
   nome: string;
@@ -64,8 +63,6 @@ export default function PatientPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
   const [stepTitle, setStepTitle] = useState(ANALYSIS_STEPS[0].title);
   const [stepDetail, setStepDetail] = useState(ANALYSIS_STEPS[0].detail);
   const [elapsed, setElapsed] = useState(0);
@@ -81,13 +78,8 @@ export default function PatientPage() {
           "--font-main",
           `'${cfg.font}', system-ui, sans-serif`
         );
-        // Only show popup after branding + clinic name are ready
-        setShowPopup(true);
       })
-      .catch(() => {
-        // Show popup even if config fails (fallback styles)
-        setShowPopup(true);
-      });
+      .catch(() => {});
   }, []);
 
   function handleFile(file: File) {
@@ -166,119 +158,91 @@ export default function PatientPage() {
   const welcomeText = config?.welcome_text || "Toda forma de beleza merece o melhor resultado.";
   const logoUrl = config?.logo_url || "";
 
-  // ─── Upload ────────────────────────────────────────────────────────────────
+  // ─── Upload (popup-only — no background upload screen) ──────────────────
   if (screen === "upload") {
     return (
       <main
-        className="min-h-dvh flex flex-col"
+        className="min-h-dvh flex flex-col items-center justify-center"
         style={{ background: "var(--color-background,#F0EBE3)", color: "var(--color-text,#3A3330)" }}
       >
-        {/* ── First-access popup ── */}
-        {showPopup && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-6"
-            style={{ background: "rgba(58,51,48,0.45)", backdropFilter: "blur(6px)" }}
-          >
-            <div
-              className="bg-white rounded-[2rem] p-10 max-w-sm w-full text-center shadow-2xl"
-              style={{ animation: "popupIn .4s cubic-bezier(.34,1.56,.64,1)" }}
-            >
-              <div
-                className="flex items-center justify-center mx-auto mb-6"
-                style={{
-                  width: 72, height: 72, borderRadius: "50%",
-                  background: "linear-gradient(135deg, var(--color-primary,#D9BFB2), var(--color-accent,#D99C94))",
-                  boxShadow: "0 8px 24px rgba(217,156,148,.35)",
-                }}
-              >
-                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="white" strokeWidth="1.8">
-                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold mb-2 tracking-tight" style={{ color: "var(--color-text,#3A3330)" }}>
-                Bem-vinda à {clinicName}!
-              </h2>
-              <p className="text-sm leading-relaxed mb-8" style={{ color: "var(--color-secondary,#827870)" }}>
-                Tire uma selfie e receba sua{" "}
-                <strong style={{ color: "var(--color-accent,#D99C94)" }}>
-                  análise de pele com inteligência artificial
-                </strong>{" "}
-                — descubra os melhores procedimentos para você.
-              </p>
-              <button
-                onClick={() => { setShowPopup(false); fileRef.current?.click(); }}
-                className="w-full flex items-center justify-center gap-2 py-4 rounded-full text-white font-semibold text-base transition-all hover:brightness-110"
-                style={{ background: "var(--color-secondary,#827870)" }}
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" strokeWidth="2">
-                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
-                Tirar foto e analisar
-              </button>
-            </div>
-          </div>
-        )}
         <style>{`@keyframes popupIn { from{opacity:0;transform:scale(.85) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }`}</style>
-        <div className="max-w-[480px] mx-auto w-full px-5 py-6 flex flex-col flex-1">
-          <header className="text-center py-6 pb-4">
+
+        {/* Hidden file input */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="user"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+            // Reset so same file can be re-selected
+            e.target.value = "";
+          }}
+        />
+
+        {/* Full-screen popup */}
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-6"
+          style={{ background: "rgba(58,51,48,0.45)", backdropFilter: "blur(6px)" }}
+        >
+          <div
+            className="bg-white rounded-[2rem] p-10 max-w-sm w-full text-center shadow-2xl"
+            style={{ animation: "popupIn .4s cubic-bezier(.34,1.56,.64,1)" }}
+          >
+            {/* Logo or name */}
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={clinicName} className="h-14 object-contain mx-auto mb-3" />
-            ) : (
-              <div className="text-2xl font-semibold mb-3">{clinicName}</div>
-            )}
-            <p className="text-sm opacity-70">{welcomeText}</p>
-          </header>
+              <img src={logoUrl} alt={clinicName} className="h-12 object-contain mx-auto mb-4" />
+            ) : null}
 
-          <Separator className="mb-6 opacity-30" />
-
-          <div
-            className={`flex-1 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-colors cursor-pointer p-8 text-center min-h-[240px] ${
-              dragOver
-                ? "border-[var(--color-accent,#D99C94)] bg-[var(--color-accent,#D99C94)]/10"
-                : "border-[var(--color-primary,#D9BFB2)] bg-white/60"
-            }`}
-            onClick={() => fileRef.current?.click()}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragOver(false);
-              const f = e.dataTransfer.files[0];
-              if (f) handleFile(f);
-            }}
-          >
-            <div className="text-5xl mb-4">📸</div>
-            <p className="font-semibold text-base mb-1">Envie uma selfie do rosto</p>
-            <p className="text-sm opacity-60 mb-5">Arraste aqui ou toque para selecionar</p>
-            <Button
-              style={{ background: "var(--color-primary,#D9BFB2)", color: "var(--color-text,#3A3330)" }}
-              className="rounded-xl px-6 font-semibold"
+            <div
+              className="flex items-center justify-center mx-auto mb-6"
+              style={{
+                width: 72, height: 72, borderRadius: "50%",
+                background: "linear-gradient(135deg, var(--color-primary,#D9BFB2), var(--color-accent,#D99C94))",
+                boxShadow: "0 8px 24px rgba(217,156,148,.35)",
+              }}
             >
-              Escolher foto
-            </Button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              capture="user"
-              className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-            />
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="white" strokeWidth="1.8">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold mb-2 tracking-tight" style={{ color: "var(--color-text,#3A3330)" }}>
+              Bem-vinda à {clinicName}!
+            </h2>
+            <p className="text-sm leading-relaxed mb-8" style={{ color: "var(--color-secondary,#827870)" }}>
+              Tire uma selfie e receba sua{" "}
+              <strong style={{ color: "var(--color-accent,#D99C94)" }}>
+                análise de pele com inteligência artificial
+              </strong>{" "}
+              — descubra os melhores procedimentos para você.
+            </p>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-full text-white font-semibold text-base transition-all hover:brightness-110"
+              style={{ background: "var(--color-secondary,#827870)" }}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" strokeWidth="2">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              Tirar foto e analisar
+            </button>
+
+            {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
           </div>
-
-          {error && <p className="text-sm text-red-600 text-center mt-4">{error}</p>}
-
-          {(config?.footer?.phone || config?.footer?.instagram || config?.footer?.address) && (
-            <footer className="text-center text-xs opacity-50 mt-6 space-y-0.5">
-              {config.footer.phone && <p>📞 {config.footer.phone}</p>}
-              {config.footer.instagram && <p>📷 {config.footer.instagram}</p>}
-              {config.footer.address && <p>📍 {config.footer.address}</p>}
-            </footer>
-          )}
         </div>
+
+        {(config?.footer?.phone || config?.footer?.instagram || config?.footer?.address) && (
+          <footer className="fixed bottom-4 text-center text-xs opacity-40 space-y-0.5 z-[60]">
+            {config.footer.phone && <p>📞 {config.footer.phone}</p>}
+            {config.footer.instagram && <p>📷 {config.footer.instagram}</p>}
+            {config.footer.address && <p>📍 {config.footer.address}</p>}
+          </footer>
+        )}
       </main>
     );
   }
