@@ -37,6 +37,16 @@ const SEVERITY_COLOR: Record<string, string> = {
   intensa: "bg-red-100 text-red-800",
 };
 
+const ANALYSIS_STEPS = [
+  { at: 0,  title: "Analisando sua pele…",        detail: "ENVIANDO IMAGEM" },
+  { at: 4,  title: "IA dermatológica avaliando…", detail: "RECONHECENDO TIPO DE PELE" },
+  { at: 12, title: "Identificando achados…",       detail: "DETECTANDO ÁREAS DE ATENÇÃO" },
+  { at: 22, title: "Mapeando pontos…",             detail: "LOCALIZANDO ACHADOS NA FOTO" },
+  { at: 40, title: "Quase pronto…",                detail: "FINALIZANDO COORDENADAS" },
+  { at: 65, title: "Gerando relatório…",           detail: "PREPARANDO RECOMENDAÇÕES" },
+  { at: 90, title: "Análise detalhada…",           detail: "PROCESSAMENTO EM ANDAMENTO" },
+];
+
 export default function PatientPage() {
   const [config, setConfig] = useState<ClinicConfig | null>(null);
   const [screen, setScreen] = useState<"upload" | "analyzing" | "report">("upload");
@@ -46,6 +56,10 @@ export default function PatientPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [showPopup, setShowPopup] = useState(true);
+  const [stepTitle, setStepTitle] = useState(ANALYSIS_STEPS[0].title);
+  const [stepDetail, setStepDetail] = useState(ANALYSIS_STEPS[0].detail);
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     fetch("/api/config")
@@ -72,12 +86,34 @@ export default function PatientPage() {
     analyzeImage(file);
   }
 
+  function startStepTimer() {
+    const start = Date.now();
+    timerRef.current = setInterval(() => {
+      const secs = Math.floor((Date.now() - start) / 1000);
+      setElapsed(secs);
+      let cur = ANALYSIS_STEPS[0];
+      for (const s of ANALYSIS_STEPS) { if (secs >= s.at) cur = s; }
+      setStepTitle(cur.title);
+      setStepDetail(cur.detail);
+    }, 1000);
+  }
+
+  function stopStepTimer() {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  }
+
   async function analyzeImage(file: File) {
     setScreen("analyzing");
+    setStepTitle(ANALYSIS_STEPS[0].title);
+    setStepDetail(ANALYSIS_STEPS[0].detail);
+    setElapsed(0);
+    startStepTimer();
+
     const form = new FormData();
     form.append("image", file);
     try {
       const resp = await fetch("/analyze", { method: "POST", body: form });
+      stopStepTimer();
       if (resp.status === 402) {
         setError("Limite de análises do plano atingido. Fale com a clínica.");
         setScreen("upload");
@@ -85,7 +121,11 @@ export default function PatientPage() {
       }
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({}));
-        setError((data as Record<string, string>).detail || "Erro ao analisar. Tente novamente.");
+        setError(
+          (data as { detail?: string; error?: string }).detail ||
+          (data as { detail?: string; error?: string }).error ||
+          "Erro ao analisar. Tente novamente."
+        );
         setScreen("upload");
         return;
       }
@@ -93,7 +133,8 @@ export default function PatientPage() {
       setReport(data);
       setScreen("report");
     } catch {
-      setError("Erro de conexão. Tente novamente.");
+      stopStepTimer();
+      setError("Erro de conexão. Verifique sua internet e tente novamente.");
       setScreen("upload");
     }
   }
@@ -233,18 +274,72 @@ export default function PatientPage() {
         className="min-h-dvh flex flex-col items-center justify-center text-center px-6"
         style={{ background: "var(--color-background,#F0EBE3)", color: "var(--color-text,#3A3330)" }}
       >
-        <div className="text-5xl mb-6 animate-pulse">🔬</div>
-        <p className="text-xl font-semibold mb-2">Analisando sua pele…</p>
-        <p className="text-sm opacity-60">Isso leva alguns segundos.</p>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+          @keyframes fadeStep { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+          .step-fade { animation: fadeStep .4s ease; }
+        `}</style>
+
+        {/* Photo preview */}
         {preview && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={preview}
-            alt="preview"
-            className="mt-6 w-24 h-24 rounded-full object-cover border-4"
-            style={{ borderColor: "var(--color-primary,#D9BFB2)" }}
-          />
+          <div className="relative mb-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={preview}
+              alt="preview"
+              className="w-28 h-28 rounded-full object-cover border-4 shadow-lg"
+              style={{ borderColor: "var(--color-primary,#D9BFB2)" }}
+            />
+            {/* Spinning ring */}
+            <div
+              className="absolute inset-0 rounded-full border-4 border-transparent"
+              style={{
+                borderTopColor: "var(--color-accent,#D99C94)",
+                animation: "spin 1.2s linear infinite",
+              }}
+            />
+          </div>
         )}
+
+        {/* Main title */}
+        <p key={stepTitle} className="step-fade text-xl font-bold mb-2 tracking-tight">
+          {stepTitle}
+        </p>
+
+        {/* Detail tag */}
+        <p
+          key={stepDetail}
+          className="step-fade text-xs font-mono tracking-widest mb-6"
+          style={{ color: "var(--color-accent,#D99C94)" }}
+        >
+          {stepDetail}
+        </p>
+
+        {/* Progress dots */}
+        <div className="flex gap-2 mb-4">
+          {ANALYSIS_STEPS.map((s, i) => {
+            const active = elapsed >= s.at && (i === ANALYSIS_STEPS.length - 1 || elapsed < ANALYSIS_STEPS[i + 1].at);
+            const done   = i < ANALYSIS_STEPS.length - 1 && elapsed >= ANALYSIS_STEPS[i + 1].at;
+            return (
+              <div
+                key={i}
+                className="rounded-full transition-all duration-500"
+                style={{
+                  width:  active ? 20 : 8,
+                  height: 8,
+                  background: done
+                    ? "var(--color-accent,#D99C94)"
+                    : active
+                    ? "var(--color-primary,#D9BFB2)"
+                    : "rgba(58,51,48,0.15)",
+                }}
+              />
+            );
+          })}
+        </div>
+
+        {/* Elapsed time */}
+        <p className="text-xs opacity-40">{elapsed}s</p>
       </main>
     );
   }
