@@ -402,6 +402,7 @@ export default function PatientPage() {
                     background: bg,
                     zIndex: 2,
                   }}
+                  data-marker={i}
                   title={f.description}
                   onClick={() => {
                     document.getElementById(`finding-${i}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -424,95 +425,129 @@ export default function PatientPage() {
           </Badge>
         </div>
 
+        {/* ── Findings ── */}
         {report.findings?.length > 0 && (
           <section>
             <h2 className="font-semibold text-sm uppercase tracking-wide opacity-60 mb-3">Achados</h2>
             <div className="space-y-3">
-              {report.findings.map((f, i) => (
-                <Card key={i} id={`finding-${i}`} className="border-0 shadow-sm bg-white/70">
-                  <CardContent className="pt-4 pb-3 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-sm">{f.description}</span>
-                      {f.priority && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_COLOR[f.priority] || "bg-gray-100 text-gray-700"}`}>
-                          {f.priority}
+              {report.findings.map((f, i) => {
+                const HORIZON: Record<string, string> = { CURTO_PRAZO: "Curto prazo", MEDIO_PRAZO: "Médio prazo", LONGO_PRAZO: "Longo prazo" };
+                return (
+                  <Card
+                    key={i}
+                    id={`finding-${i}`}
+                    className="border-0 shadow-sm bg-white/70 cursor-pointer transition-shadow hover:shadow-md"
+                    style={{ borderLeft: `4px solid ${f.priority === "PRIORITARIO" ? "#E74C3C" : f.priority === "OPCIONAL" ? "var(--color-secondary,#827870)" : "var(--color-accent,#D99C94)"}` }}
+                    onClick={() => {
+                      const marker = document.querySelector(`[data-marker="${i}"]`);
+                      marker?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                  >
+                    <CardContent className="pt-4 pb-3 space-y-2">
+                      {/* Header: number + zone + priority */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-mono font-bold" style={{ color: "var(--color-accent,#D99C94)" }}>
+                          {i + 1}. {f.zone || ""}
                         </span>
-                      )}
-                    </div>
-                    {f.zone && <p className="text-xs opacity-50">{f.zone}</p>}
-                    {f.conduta && <p className="text-xs opacity-70">{f.conduta}</p>}
-                    {f.procedimentos_indicados?.length ? (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {f.procedimentos_indicados.map((p, j) => (
-                          <Badge key={j} variant="outline" className="text-xs">
-                            {p.nome}{p.sessoes_estimadas ? ` · ${p.sessoes_estimadas}` : ""}
-                          </Badge>
-                        ))}
+                        {f.priority && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ${PRIORITY_COLOR[f.priority] || "bg-gray-100 text-gray-700"}`}>
+                            {f.priority}
+                          </span>
+                        )}
                       </div>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              ))}
+
+                      {/* Description */}
+                      <p className="font-semibold text-sm leading-snug">{f.description}</p>
+
+                      {/* Conduta */}
+                      {f.conduta && (
+                        <div className="text-xs opacity-75 leading-relaxed">
+                          <span className="font-semibold">Conduta: </span>{f.conduta}
+                        </div>
+                      )}
+
+                      {/* Procedimentos indicados */}
+                      {f.procedimentos_indicados?.length ? (
+                        <div className="space-y-2 mt-1">
+                          {f.procedimentos_indicados.map((p, j) => (
+                            <div key={j} className="flex gap-2 items-start">
+                              <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: "var(--color-accent,#D99C94)" }} />
+                              <div className="text-xs">
+                                <p className="font-semibold">{p.nome}</p>
+                                {p.descricao_breve && <p className="opacity-70">{p.descricao_breve}</p>}
+                                {p.sessoes_estimadas && <p className="opacity-60">{p.sessoes_estimadas}</p>}
+                                {p.horizonte && <p className="opacity-50 text-[10px]">{HORIZON[p.horizonte] || p.horizonte}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {/* Clinical note */}
+                      {f.clinical_note && (
+                        <p className="text-[11px] italic opacity-50 leading-relaxed">{f.clinical_note}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </section>
         )}
 
+        {/* ── Plano Terapêutico ── */}
         {report.plano_terapeutico && (
           <section>
-            <h2 className="font-semibold text-sm uppercase tracking-wide opacity-60 mb-3">Plano terapêutico</h2>
+            <h2 className="font-semibold text-sm uppercase tracking-wide opacity-60 mb-3">Plano Terapêutico</h2>
             <Card className="border-0 shadow-sm bg-white/70">
-              <CardContent className="pt-4 pb-3 space-y-3 text-sm">
-                {report.plano_terapeutico.curto_prazo && (
-                  <div>
-                    <p className="font-semibold text-xs opacity-50 uppercase mb-0.5">Curto prazo</p>
-                    <p className="opacity-80">{report.plano_terapeutico.curto_prazo}</p>
+              <CardContent className="pt-4 pb-3 space-y-4 text-sm">
+                {[
+                  { label: "Curto prazo (0–30 dias)", text: report.plano_terapeutico.curto_prazo, color: "#E74C3C" },
+                  { label: "Médio prazo (1–3 meses)", text: report.plano_terapeutico.medio_prazo, color: "var(--color-accent,#D99C94)" },
+                  { label: "Longo prazo (3–12 meses)", text: report.plano_terapeutico.longo_prazo, color: "var(--color-secondary,#827870)" },
+                ].map(({ label, text, color }) => text ? (
+                  <div key={label}>
+                    <p className="font-bold text-xs uppercase mb-1" style={{ color }}>{label}</p>
+                    <p className="text-xs opacity-80 leading-relaxed">{text}</p>
                   </div>
-                )}
-                {report.plano_terapeutico.medio_prazo && (
-                  <div>
-                    <p className="font-semibold text-xs opacity-50 uppercase mb-0.5">Médio prazo</p>
-                    <p className="opacity-80">{report.plano_terapeutico.medio_prazo}</p>
-                  </div>
-                )}
-                {report.plano_terapeutico.longo_prazo && (
-                  <div>
-                    <p className="font-semibold text-xs opacity-50 uppercase mb-0.5">Longo prazo</p>
-                    <p className="opacity-80">{report.plano_terapeutico.longo_prazo}</p>
-                  </div>
-                )}
+                ) : null)}
               </CardContent>
             </Card>
           </section>
         )}
 
+        {/* ── Rotina de Skin Care ── */}
         {(report.am_routine || report.pm_routine) ? (
           <section>
-            <h2 className="font-semibold text-sm uppercase tracking-wide opacity-60 mb-3">Rotina de skincare</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[{ label: "🌅 Manhã", text: report.am_routine }, { label: "🌙 Noite", text: report.pm_routine }].map(({ label, text }) =>
-                text ? (
-                  <Card key={label} className="border-0 shadow-sm bg-white/70">
-                    <CardContent className="pt-4 pb-3">
-                      <p className="font-semibold text-xs mb-2">{label}</p>
-                      <p className="text-xs opacity-75 whitespace-pre-line">{text}</p>
-                    </CardContent>
-                  </Card>
-                ) : null
-              )}
-            </div>
+            <h2 className="font-semibold text-sm uppercase tracking-wide opacity-60 mb-3">Rotina de Skin Care</h2>
+            {[{ label: "Rotina Manhã", text: report.am_routine }, { label: "Rotina Noite", text: report.pm_routine }].map(({ label, text }) =>
+              text ? (
+                <Card key={label} className="border-0 shadow-sm bg-white/70 mb-3">
+                  <CardContent className="pt-4 pb-3">
+                    <p className="font-bold text-xs uppercase mb-2" style={{ color: "var(--color-accent,#D99C94)" }}>{label}</p>
+                    <p className="text-xs opacity-75 leading-relaxed whitespace-pre-line">{text}</p>
+                  </CardContent>
+                </Card>
+              ) : null
+            )}
           </section>
         ) : null}
 
-        {report.general_observations && (
-          <Card className="border-0 shadow-sm bg-white/70">
-            <CardContent className="pt-4 pb-3">
-              <p className="text-xs opacity-70">{report.general_observations}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {config?.disclaimer && (
-          <p className="text-[10px] opacity-40 text-center leading-relaxed">{config.disclaimer}</p>
+        {/* ── Observações ── */}
+        {(report.general_observations || config?.disclaimer) && (
+          <section>
+            <h2 className="font-semibold text-sm uppercase tracking-wide opacity-60 mb-3">Observações</h2>
+            <Card className="border-0 shadow-sm bg-white/70">
+              <CardContent className="pt-4 pb-3">
+                <p className="text-xs opacity-70 leading-relaxed whitespace-pre-line">
+                  {report.general_observations}
+                </p>
+                {config?.disclaimer && (
+                  <p className="text-[10px] opacity-40 mt-3 leading-relaxed">{config.disclaimer}</p>
+                )}
+              </CardContent>
+            </Card>
+          </section>
         )}
 
         <div className="pb-6 text-center">
