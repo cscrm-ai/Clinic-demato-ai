@@ -377,28 +377,59 @@ export default function PatientPage() {
           </button>
         </div>
 
-        <Card className="border-0 shadow-sm bg-white/70">
-          <CardContent className="pt-5 pb-4 space-y-2">
-            <div className="flex items-center gap-3">
-              {preview && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={preview} alt="foto" className="w-14 h-14 rounded-full object-cover border-2"
-                  style={{ borderColor: "var(--color-primary,#D9BFB2)" }} />
-              )}
-              <div>
-                <p className="font-semibold text-base">{report.skin_type}</p>
-                <p className="text-xs opacity-60">Fitzpatrick {report.fitzpatrick_type}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Face map with markers */}
+        {preview && report.findings?.length > 0 && (
+          <div className="relative w-full max-w-[400px] mx-auto rounded-2xl overflow-hidden shadow-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={preview} alt="Foto analisada" className="w-full block" />
+            {report.findings.map((f, i) => {
+              const x = (f.x_point ?? 0) * 100;
+              const y = (f.y_point ?? 0) * 100;
+              if (x === 0 && y === 0) return null;
+              const bg = f.priority === "PRIORITARIO"
+                ? "#E74C3C"
+                : f.priority === "OPCIONAL"
+                ? "var(--color-secondary,#827870)"
+                : "var(--color-accent,#D99C94)";
+              return (
+                <div
+                  key={i}
+                  className="absolute flex items-center justify-center rounded-full border-2 border-white text-white text-[0.65rem] font-bold shadow-md cursor-pointer transition-transform hover:scale-125"
+                  style={{
+                    width: 24, height: 24,
+                    left: `${x}%`, top: `${y}%`,
+                    transform: "translate(-50%, -50%)",
+                    background: bg,
+                    zIndex: 2,
+                  }}
+                  title={f.description}
+                  onClick={() => {
+                    document.getElementById(`finding-${i}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                >
+                  {i + 1}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Badges */}
+        <div className="flex gap-2 justify-center flex-wrap">
+          <Badge variant="secondary" className="text-xs" style={{ background: "rgba(217,156,148,0.12)", color: "var(--color-primary,#D9BFB2)" }}>
+            Fototipo {report.fitzpatrick_type}
+          </Badge>
+          <Badge variant="secondary" className="text-xs" style={{ background: "rgba(217,156,148,0.12)", color: "var(--color-primary,#D9BFB2)" }}>
+            {report.skin_type}
+          </Badge>
+        </div>
 
         {report.findings?.length > 0 && (
           <section>
             <h2 className="font-semibold text-sm uppercase tracking-wide opacity-60 mb-3">Achados</h2>
             <div className="space-y-3">
               {report.findings.map((f, i) => (
-                <Card key={i} className="border-0 shadow-sm bg-white/70">
+                <Card key={i} id={`finding-${i}`} className="border-0 shadow-sm bg-white/70">
                   <CardContent className="pt-4 pb-3 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-sm">{f.description}</span>
