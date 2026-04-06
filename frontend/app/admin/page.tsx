@@ -152,7 +152,9 @@ export default function AdminPage() {
   const [billing, setBilling] = useState<BillingStatus | null>(null);
   // Analyses state
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [analysesLoading, setAnalysesLoading] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
+  const [activeTab, setActiveTab] = useState("inicio");
   // Upgrade modal
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -249,8 +251,13 @@ export default function AdminPage() {
   }
 
   async function loadAnalyses() {
-    const resp = await apiFetch("/api/admin/analyses");
-    if (resp.ok) setAnalyses(await resp.json());
+    setAnalysesLoading(true);
+    try {
+      const resp = await apiFetch("/api/admin/analyses");
+      if (resp.ok) setAnalyses(await resp.json());
+    } finally {
+      setAnalysesLoading(false);
+    }
   }
 
   async function deleteAnalysis(id: string) {
@@ -351,14 +358,15 @@ export default function AdminPage() {
                 <button
                   key={tab}
                   onClick={() => {
-                    // Trigger tab change via data attr
-                    document
-                      .querySelector(`[data-tab="${tab}"]`)
-                      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+                    setActiveTab(tab);
                     if (tab === "historico") loadAnalyses();
                     if (tab === "financeiro") loadBilling();
                   }}
-                  className="w-full text-left px-5 py-2.5 text-sm text-[#3A3330] hover:bg-[#F5F0EB] transition-colors"
+                  className={`w-full text-left px-5 py-2.5 text-sm transition-colors ${
+                    activeTab === tab
+                      ? "bg-[#F5F0EB] font-semibold text-[#3A3330]"
+                      : "text-[#3A3330] hover:bg-[#F5F0EB]"
+                  }`}
                 >
                   {labels[tab]}
                 </button>
@@ -391,10 +399,10 @@ export default function AdminPage() {
         {!config ? (
           <p className="text-muted-foreground">Carregando…</p>
         ) : (
-          <Tabs defaultValue="inicio">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="hidden">
               {["inicio", "aparencia", "procedimentos", "historico", "financeiro", "config"].map((t) => (
-                <TabsTrigger key={t} value={t} data-tab={t} />
+                <TabsTrigger key={t} value={t} />
               ))}
             </TabsList>
 
@@ -691,7 +699,9 @@ export default function AdminPage() {
             <TabsContent value="historico">
               <div className="max-w-4xl space-y-4">
                 <h1 className="text-2xl font-bold text-[#3A3330]">Histórico</h1>
-                {analyses.length === 0 ? (
+                {analysesLoading ? (
+                  <p className="text-sm text-muted-foreground">Carregando análises…</p>
+                ) : analyses.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhuma análise encontrada.</p>
                 ) : (
                   <div className="space-y-2">
