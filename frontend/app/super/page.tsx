@@ -46,7 +46,7 @@ type Clinic = {
   subscription_status: string;
   owner_email: string;
   plan_name: string;
-  usage_this_month: number;
+  usage_this_month: number | { analyses_count?: number; total_cost_cents?: number; period?: string };
   created_at: string;
 };
 
@@ -407,7 +407,11 @@ export default function SuperAdminPage() {
                           <TableCell className="text-sm">{c.plan_name || "—"}</TableCell>
                           <TableCell>{statusBadge(c.status)}</TableCell>
                           <TableCell>{statusBadge(c.subscription_status || "—")}</TableCell>
-                          <TableCell className="text-sm">{c.usage_this_month ?? 0}</TableCell>
+                          <TableCell className="text-sm">
+                            {typeof c.usage_this_month === "object"
+                              ? (c.usage_this_month?.analyses_count ?? 0)
+                              : (c.usage_this_month ?? 0)}
+                          </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
                               {c.status === "active" ? (
