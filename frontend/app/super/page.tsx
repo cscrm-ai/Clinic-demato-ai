@@ -149,7 +149,20 @@ export default function SuperAdminPage() {
 
   async function loadOverview() {
     const r = await apiFetch("/api/super/overview");
-    if (r.ok) setOverview(await r.json());
+    if (!r.ok) return;
+    const raw = await r.json();
+    // Sanitize: some API values are objects, extract primitives
+    const safe: Record<string, unknown> = { ...raw };
+    for (const key of Object.keys(safe)) {
+      const v = safe[key];
+      if (v && typeof v === "object" && !Array.isArray(v)) {
+        // Extract first numeric value from object
+        const obj = v as Record<string, unknown>;
+        const numKey = Object.keys(obj).find((k) => typeof obj[k] === "number");
+        safe[key] = numKey ? obj[numKey] : JSON.stringify(v);
+      }
+    }
+    setOverview(safe);
   }
 
   async function loadClinics() {
@@ -208,8 +221,8 @@ export default function SuperAdminPage() {
 
   // Chart data: last 30 days
   const chartData = (() => {
-    const raw = (overview?.chart_data as { date: string; count: number }[]) || [];
-    if (raw.length) return raw.map((d) => ({ date: d.date.slice(5), val: d.count }));
+    const raw = Array.isArray(overview?.chart_data) ? (overview.chart_data as { date: string; count: number }[]) : [];
+    if (raw.length) return raw.map((d) => ({ date: String(d.date || "").slice(5), val: Number(d.count) || 0 }));
     // Generate empty 30-day array
     return Array.from({ length: 30 }, (_, i) => {
       const d = new Date();
@@ -314,30 +327,14 @@ export default function SuperAdminPage() {
             <h1 className="text-2xl font-bold text-[#3A3330] mb-6">Dashboard</h1>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {[
-                { label: "Análises (30d)", value: (() => {
-                  const v = overview?.analyses_this_month;
-                  if (v == null) return "—";
-                  if (typeof v === "object") return (v as { analyses_count?: number }).analyses_count ?? "—";
-                  return v;
-                })() },
-                { label: "Clínicas ativas", value: (() => {
-                  const v = overview?.active_clinics;
-                  return (v != null && typeof v !== "object") ? v : "—";
-                })() },
-                {
-                  label: "MRR",
-                  value: overview?.mrr_cents
-                    ? `R$ ${(Number(overview.mrr_cents) / 100).toFixed(0)}`
-                    : "—",
-                },
-                { label: "Inadimplentes", value: (() => {
-                  const v = overview?.past_due_clinics;
-                  return (v != null && typeof v !== "object") ? v : "—";
-                })() },
+                { label: "Análises (30d)", value: overview?.analyses_this_month },
+                { label: "Clínicas ativas", value: overview?.active_clinics },
+                { label: "MRR", value: overview?.mrr_cents ? `R$ ${(Number(overview.mrr_cents) / 100).toFixed(0)}` : null },
+                { label: "Inadimplentes", value: overview?.past_due_clinics },
               ].map((m) => (
                 <Card key={m.label}>
                   <CardContent className="pt-6">
-                    <p className="text-3xl font-bold text-[#3A3330]">{String(m.value)}</p>
+                    <p className="text-3xl font-bold text-[#3A3330]">{m.value != null ? String(m.value) : "—"}</p>
                     <p className="text-xs text-muted-foreground mt-1">{m.label}</p>
                   </CardContent>
                 </Card>
