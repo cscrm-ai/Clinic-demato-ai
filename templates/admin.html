@@ -735,11 +735,11 @@ body {
 <div class="login-screen" id="loginScreen">
     <div class="login-card">
         <h1>Painel Admin</h1>
-        <p>Digite seu e-mail para acessar o painel</p>
+        <p>Entre com seu e-mail e senha</p>
         <input type="email" id="emailInput" placeholder="seu@email.com" autofocus>
-        <button class="btn-login" id="btnLogin">Enviar Magic Link</button>
-        <div class="login-error" id="loginError">Erro ao enviar o link. Verifique o e-mail.</div>
-        <div class="magic-link-sent" id="magicLinkSent"></div>
+        <input type="password" id="passwordInput" placeholder="Senha">
+        <button class="btn-login" id="btnLogin">Entrar</button>
+        <div class="login-error" id="loginError">E-mail ou senha incorretos.</div>
     </div>
 </div>
 
@@ -978,47 +978,40 @@ function getToken() {
     return getCookie('sb-access-token');
 }
 
-// ── Page load: check magic link token in URL hash ──
-(function checkMagicLink() {
-    const hash = window.location.hash;
-    if (hash && hash.includes('access_token=')) {
-        const params = new URLSearchParams(hash.replace(/^#/, ''));
-        const token = params.get('access_token');
-        if (token) {
-            setCookie('sb-access-token', token, 7);
-            history.replaceState(null, '', window.location.pathname + window.location.search);
-            showDashboard();
-            return;
-        }
-    }
+// ── Page load: check session ──
+(function checkSession() {
     if (getToken()) {
         showDashboard();
     }
 })();
 
-// ── Login: magic link ──
+// ── Login: email + senha ──
 document.getElementById('btnLogin').addEventListener('click', doLogin);
 document.getElementById('emailInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doLogin();
 });
+document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doLogin();
+});
 
 async function doLogin() {
-    const email = document.getElementById('emailInput').value.trim();
-    if (!email) return;
+    const email    = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    if (!email || !password) return;
     document.getElementById('loginError').style.display = 'none';
-    document.getElementById('magicLinkSent').style.display = 'none';
 
     try {
-        const resp = await fetch('/api/auth/magic-link', {
+        const resp = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
+            body: JSON.stringify({ email, password }),
         });
-        if (resp.ok) {
-            document.getElementById('magicLinkSent').textContent =
-                'Magic link enviado para ' + email + '. Verifique sua caixa de entrada.';
-            document.getElementById('magicLinkSent').style.display = 'block';
+        const data = await resp.json();
+        if (resp.ok && data.access_token) {
+            setCookie('sb-access-token', data.access_token, 7);
+            showDashboard();
         } else {
+            document.getElementById('loginError').textContent = data.error || 'E-mail ou senha incorretos.';
             document.getElementById('loginError').style.display = 'block';
         }
     } catch (e) {
@@ -1209,8 +1202,8 @@ document.getElementById('btnLogout').addEventListener('click', async () => {
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('dashboard').classList.remove('active');
     document.getElementById('emailInput').value = '';
+    document.getElementById('passwordInput').value = '';
     document.getElementById('loginError').style.display = 'none';
-    document.getElementById('magicLinkSent').style.display = 'none';
 });
 
 // ── Billing ──

@@ -197,15 +197,34 @@ async def analyze(request: Request, image: UploadFile = File(...)):
         config  = _clinic_config(request)
         catalog = config.get("procedures_catalog", [])
 
+        # Chaves de API específicas da clínica (override das globais se configuradas)
+        _overridden_keys: dict[str, str] = {}
+        if clinic:
+            api_keys = (clinic.get("config") or {}).get("api_keys", {})
+            if api_keys.get("fal_key"):
+                _overridden_keys["FAL_KEY"] = os.environ.get("FAL_KEY", "")
+                os.environ["FAL_KEY"] = api_keys["fal_key"]
+            if api_keys.get("google_api_key"):
+                _overridden_keys["GOOGLE_API_KEY"] = os.environ.get("GOOGLE_API_KEY", "")
+                os.environ["GOOGLE_API_KEY"] = api_keys["google_api_key"]
+
         # Roda análise com tracker de custo
         tracker = CostAccumulator(
             clinic_id=str(clinic["id"]) if clinic else "",
         )
-        report = analyze_image(
-            str(file_path.resolve()),
-            procedures_catalog=catalog,
-            cost_tracker=tracker,
-        )
+        try:
+            report = analyze_image(
+                str(file_path.resolve()),
+                procedures_catalog=catalog,
+                cost_tracker=tracker,
+            )
+        finally:
+            # Restaura chaves originais
+            for _k, _v in _overridden_keys.items():
+                if _v:
+                    os.environ[_k] = _v
+                else:
+                    os.environ.pop(_k, None)
         result      = report.model_dump()
         duration_ms = int(
             (datetime.datetime.now(datetime.timezone.utc) - t_start).total_seconds() * 1000
@@ -453,33 +472,31 @@ async def admin_billing_portal(
 # AUTH
 # ═══════════════════════════════════════════════════════════════════════════
 
-@app.post("/api/auth/magic-link")
-async def auth_magic_link(request: Request):
-    """Dispara magic link via Supabase Auth para login sem senha."""
-    body  = await request.json()
-    email = (body.get("email") or "").strip().lower()
+@app.post("/api/auth/login")
+async def auth_login(request: Request):
+    """Login com e-mail e senha via Supabase Auth."""
+    body     = await request.json()
+    email    = (body.get("email") or "").strip().lower()
+    password = (body.get("password") or "").strip()
 
-    if not email:
-        return JSONResponse(status_code=400, content={"error": "E-mail obrigatório."})
-
-    # Descobre redirect URL baseado no tenant atual
-    clinic      = getattr(request.state, "clinic", None)
-    base_domain = os.environ.get("APP_BASE_DOMAIN", "cscrm.ai")
-
-    if getattr(request.state, "is_super_portal", False):
-        redirect_to = f"https://admin.{base_domain}/super"
-    elif clinic:
-        redirect_to = f"https://{clinic['subdomain']}.{base_domain}/admin"
-    else:
-        redirect_to = f"https://admin.{base_domain}/super"
+    if not email or not password:
+        return JSONResponse(status_code=400, content={"error": "E-mail e senha obrigatórios."})
 
     db = get_db()
-    db.auth.sign_in_with_otp({
-        "email":   email,
-        "options": {"email_redirect_to": redirect_to},
-    })
+    try:
+        session = db.auth.sign_in_with_password({"email": email, "password": password})
+        token   = session.session.access_token
+        return {"ok": True, "access_token": token}
+    except Exception as _exc:
+        err_msg = str(_exc)
+        print(f"[AUTH] Erro no login de {email}: {err_msg}")
+        return JSONResponse(status_code=401, content={"error": "E-mail ou senha incorretos."})
 
-    return {"ok": True, "message": "Magic link enviado para seu e-mail."}
+
+@app.post("/api/auth/magic-link")
+async def auth_magic_link(request: Request):
+    """Mantido para compatibilidade — redireciona para login com senha."""
+    return JSONResponse(status_code=410, content={"error": "Magic link desativado. Use e-mail e senha."})
 
 
 @app.post("/api/auth/logout")
@@ -649,7 +666,7 @@ async def super_create_clinic(
 
     # Dispara magic link de boas-vindas
     try:
-        base_domain = os.environ.get("APP_BASE_DOMAIN", "cscrm.ai")
+        base_domain = os.environ.get("APP_BASE_DOMAIN", "allbele.app")
         db.auth.sign_in_with_otp({
             "email":   owner_email,
             "options": {
@@ -659,10 +676,19 @@ async def super_create_clinic(
     except Exception as _ml_exc:
         print(f"[AUTH] Erro ao enviar magic link: {_ml_exc}")
 
+    # Cria registro DNS no Cloudflare automaticamente
+    dns_result = {"skipped": True}
+    try:
+        from dns.cloudflare import create_clinic_dns
+        dns_result = create_clinic_dns(subdomain)
+    except Exception as _dns_exc:
+        print(f"[DNS] Erro ao criar registro Cloudflare: {_dns_exc}")
+
     return {
         "ok":           True,
         "clinic":       clinic,
         "checkout_url": checkout_url,
+        "dns":          dns_result,
     }
 
 
@@ -690,19 +716,88 @@ async def super_update_clinic(
     return updated
 
 
+@app.post("/api/super/clinics/{clinic_id}/suspend")
+async def super_suspend_clinic(
+    clinic_id: str,
+    user_id: str = Depends(require_super_admin),
+):
+    """Suspende uma clínica."""
+    clinic = get_clinic_by_id(clinic_id)
+    if not clinic:
+        return JSONResponse(status_code=404, content={"error": "Clínica não encontrada."})
+    update_clinic(clinic_id, {"status": "suspended"})
+    invalidate_tenant_cache(clinic["subdomain"])
+    return {"ok": True}
+
+
+@app.post("/api/super/clinics/{clinic_id}/activate")
+async def super_activate_clinic(
+    clinic_id: str,
+    user_id: str = Depends(require_super_admin),
+):
+    """Reativa uma clínica suspensa."""
+    clinic = get_clinic_by_id(clinic_id)
+    if not clinic:
+        return JSONResponse(status_code=404, content={"error": "Clínica não encontrada."})
+    update_clinic(clinic_id, {"status": "active"})
+    invalidate_tenant_cache(clinic["subdomain"])
+    return {"ok": True}
+
+
 @app.delete("/api/super/clinics/{clinic_id}")
 async def super_delete_clinic(
     clinic_id: str,
     user_id: str = Depends(require_super_admin),
 ):
-    """Soft delete — marca clínica como cancelada."""
+    """Soft delete — marca clínica como cancelada e remove DNS."""
     clinic = get_clinic_by_id(clinic_id)
     if not clinic:
         return JSONResponse(status_code=404, content={"error": "Clínica não encontrada."})
 
     update_clinic(clinic_id, {"status": "canceled"})
     invalidate_tenant_cache(clinic["subdomain"])
+
+    # Remove registro DNS do Cloudflare
+    try:
+        from dns.cloudflare import delete_clinic_dns
+        delete_clinic_dns(clinic["subdomain"])
+    except Exception as _dns_exc:
+        print(f"[DNS] Erro ao remover registro Cloudflare: {_dns_exc}")
+
     return {"ok": True}
+
+
+@app.put("/api/super/clinics/{clinic_id}/api-keys")
+async def super_set_api_keys(
+    clinic_id: str,
+    request: Request,
+    user_id: str = Depends(require_super_admin),
+):
+    """Salva chaves de API específicas de uma clínica no config JSONB."""
+    clinic = get_clinic_by_id(clinic_id)
+    if not clinic:
+        return JSONResponse(status_code=404, content={"error": "Clínica não encontrada."})
+
+    body        = await request.json()
+    fal_key     = (body.get("fal_key") or "").strip()
+    google_key  = (body.get("google_api_key") or "").strip()
+
+    current_config = clinic.get("config") or {}
+    current_config.setdefault("api_keys", {})
+    # Salva apenas se não vazio; remove se vier vazio (volta para global)
+    if fal_key:
+        current_config["api_keys"]["fal_key"] = fal_key
+    else:
+        current_config["api_keys"].pop("fal_key", None)
+
+    if google_key:
+        current_config["api_keys"]["google_api_key"] = google_key
+    else:
+        current_config["api_keys"].pop("google_api_key", None)
+
+    update_clinic(clinic_id, {"config": current_config})
+    invalidate_tenant_cache(clinic["subdomain"])
+    return {"ok": True, "api_keys": current_config["api_keys"]}
 
 
 @app.post("/api/super/clinics/{clinic_id}/cancel")

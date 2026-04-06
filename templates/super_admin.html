@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Super Admin — cscrm.ai</title>
+<title>Super Admin — allbele.app</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -76,31 +76,34 @@ body {
 
 /* ── Dashboard ── */
 .dashboard { display: none; }
-.dashboard.active { display: block; }
+.dashboard.active { display: flex; min-height: 100vh; }
 .login-screen.hidden { display: none; }
 
-/* ── Top Bar ── */
-.top-bar {
+/* ── Sidebar ── */
+.sidebar {
+    width: 220px;
+    min-width: 220px;
     background: #fff;
-    border-bottom: 1px solid #E8E8E8;
-    padding: 0.875rem 2rem;
+    border-right: 1px solid #E8E8E8;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
     z-index: 50;
+    padding: 0;
 }
-.top-bar-title {
+.sidebar-brand {
+    padding: 1.5rem 1.25rem 1rem;
+    border-bottom: 1px solid #F0F0F0;
+}
+.sidebar-brand h1 {
     font-size: 1rem;
     font-weight: 700;
     color: #3A3330;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    margin-bottom: 0.2rem;
 }
-.top-bar-title .badge {
-    font-size: 0.62rem;
+.sidebar-brand .badge {
+    font-size: 0.6rem;
     font-weight: 700;
     background: #D99C94;
     color: #fff;
@@ -109,8 +112,40 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+.sidebar-nav {
+    flex: 1;
+    padding: 0.75rem 0;
+    overflow-y: auto;
+}
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.65rem 1.25rem;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #888;
+    cursor: pointer;
+    text-align: left;
+    border-left: 3px solid transparent;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+.tab-btn:hover { color: #3A3330; background: #FAF8F6; }
+.tab-btn.active { color: #3A3330; font-weight: 600; background: #FDF5F3; border-left-color: #D99C94; }
+.tab-btn .nav-icon { font-size: 1rem; width: 1.2rem; text-align: center; }
+
+.sidebar-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid #F0F0F0;
+}
 .btn-logout {
-    padding: 0.4rem 0.9rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
     background: transparent;
     color: #999;
     border: 1px solid #E0E0E0;
@@ -118,33 +153,17 @@ body {
     font-size: 0.78rem;
     cursor: pointer;
     font-family: inherit;
+    transition: all 0.15s;
+    text-align: center;
 }
 .btn-logout:hover { border-color: #D99C94; color: #3A3330; }
 
-/* ── Tabs ── */
-.tabs-bar {
-    background: #fff;
-    border-bottom: 1px solid #E8E8E8;
-    padding: 0 2rem;
-    display: flex;
-    gap: 0;
-    overflow-x: auto;
+/* ── Main Content ── */
+.main-content {
+    margin-left: 220px;
+    flex: 1;
+    min-width: 0;
 }
-.tab-btn {
-    padding: 0.875rem 1.25rem;
-    border: none;
-    background: none;
-    font-family: inherit;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #999;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    white-space: nowrap;
-    transition: color 0.2s, border-color 0.2s;
-}
-.tab-btn:hover { color: #3A3330; }
-.tab-btn.active { color: #3A3330; border-bottom-color: #D99C94; }
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
@@ -430,33 +449,38 @@ table.data-table {
 <div class="login-screen" id="loginScreen">
     <div class="login-card">
         <h1>Super Admin</h1>
-        <div class="subtitle">cscrm.ai</div>
+        <div class="subtitle">allbele.app</div>
         <input type="email" id="emailInput" placeholder="seu@email.com" autofocus>
-        <button class="btn-login" id="btnLogin">Enviar Magic Link</button>
-        <div class="login-error" id="loginError">Erro ao enviar o link. Verifique o e-mail.</div>
-        <div class="magic-link-sent" id="magicLinkSent"></div>
+        <input type="password" id="passwordInput" placeholder="Senha">
+        <button class="btn-login" id="btnLogin">Entrar</button>
+        <div class="login-error" id="loginError">E-mail ou senha incorretos.</div>
     </div>
 </div>
 
 <!-- DASHBOARD -->
 <div class="dashboard" id="dashboard">
 
-    <!-- Top Bar -->
-    <div class="top-bar">
-        <div class="top-bar-title">
-            Super Admin <span class="badge">cscrm.ai</span>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h1>Super Admin</h1>
+            <span class="badge">allbele.app</span>
         </div>
-        <button class="btn-logout" id="btnLogout">Sair</button>
-    </div>
+        <nav class="sidebar-nav">
+            <button class="tab-btn active" data-tab="tab-dashboard"><span class="nav-icon">&#9783;</span> Dashboard</button>
+            <button class="tab-btn" data-tab="tab-clinicas"><span class="nav-icon">&#127973;</span> Cl&#237;nicas</button>
+            <button class="tab-btn" data-tab="tab-uso"><span class="nav-icon">&#128200;</span> Uso &amp; Custos</button>
+            <button class="tab-btn" data-tab="tab-financeiro"><span class="nav-icon">&#128181;</span> Financeiro</button>
+            <button class="tab-btn" data-tab="tab-planos"><span class="nav-icon">&#9733;</span> Planos</button>
+            <button class="tab-btn" data-tab="tab-apis"><span class="nav-icon">&#128273;</span> APIs</button>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn-logout" id="btnLogout">Sair</button>
+        </div>
+    </aside>
 
-    <!-- Tabs -->
-    <div class="tabs-bar">
-        <button class="tab-btn active" data-tab="tab-dashboard">Dashboard</button>
-        <button class="tab-btn" data-tab="tab-clinicas">Cl&#237;nicas</button>
-        <button class="tab-btn" data-tab="tab-uso">Uso &amp; Custos</button>
-        <button class="tab-btn" data-tab="tab-financeiro">Financeiro</button>
-        <button class="tab-btn" data-tab="tab-planos">Planos</button>
-    </div>
+    <!-- Main Content -->
+    <div class="main-content">
 
     <!-- ── TAB: Dashboard ── -->
     <div class="tab-content active" id="tab-dashboard">
@@ -618,7 +642,42 @@ table.data-table {
         </div>
     </div>
 
-</div>
+    <!-- ── TAB: APIs ── -->
+    <div class="tab-content" id="tab-apis">
+        <div class="page">
+            <div class="card">
+                <h2>APIs por Cl&#237;nica</h2>
+                <p style="font-size:.85rem;color:#888;margin-bottom:1rem">
+                    Configure chaves de API espec&#237;ficas por cl&#237;nica.
+                    Quando configuradas, substituem as chaves globais da plataforma (FAL_KEY e GOOGLE_API_KEY).
+                    Deixe em branco para usar as chaves globais.
+                </p>
+                <div class="filter-row">
+                    <div class="filter-spacer"></div>
+                    <button class="btn btn-soft" onclick="loadApiKeys()">Atualizar</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Cl&#237;nica</th>
+                                <th>Subdom&#237;nio</th>
+                                <th>FAL_KEY</th>
+                                <th>GOOGLE_API_KEY</th>
+                                <th>A&#231;&#245;es</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apiKeysTableBody">
+                            <tr><td colspan="5" class="table-state">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /main-content -->
+</div><!-- /dashboard -->
 
 <!-- NOVA CLÍNICA MODAL -->
 <div class="modal-overlay" id="newClinicModal">
@@ -651,6 +710,31 @@ table.data-table {
         <div class="modal-actions">
             <button class="btn btn-soft" onclick="closeNewClinicModal()">Cancelar</button>
             <button class="btn btn-primary" onclick="createClinic()">Criar Cl&#237;nica</button>
+        </div>
+    </div>
+</div>
+
+<!-- API KEYS MODAL -->
+<div class="modal-overlay" id="apiKeyModal">
+    <div class="modal-inner">
+        <button class="btn-modal-close" onclick="closeApiKeyModal()">&#x2715;</button>
+        <h2>APIs &mdash; <span id="apiKeyClinicName"></span></h2>
+        <p style="font-size:.82rem;color:#888;margin-bottom:1.25rem">
+            Deixe em branco para usar as chaves globais da plataforma.
+        </p>
+        <input type="hidden" id="apiKeyClinicId">
+        <div class="form-field">
+            <label>FAL_KEY</label>
+            <input type="text" id="apiKeyFal" placeholder="fal_...">
+        </div>
+        <div class="form-field">
+            <label>GOOGLE_API_KEY</label>
+            <input type="text" id="apiKeyGoogle" placeholder="AIza...">
+        </div>
+        <div class="modal-result" id="apiKeyResult"></div>
+        <div class="modal-actions">
+            <button class="btn btn-soft" onclick="closeApiKeyModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveApiKeys()">Salvar</button>
         </div>
     </div>
 </div>
@@ -690,19 +774,8 @@ function handleAuthError(resp) {
     return false;
 }
 
-// ── Page load: check magic link token in URL hash ──
-(function checkMagicLink() {
-    const hash = window.location.hash;
-    if (hash && hash.includes('access_token=')) {
-        const params = new URLSearchParams(hash.replace(/^#/, ''));
-        const token = params.get('access_token');
-        if (token) {
-            setCookie('sb-access-token', token, 7);
-            history.replaceState(null, '', window.location.pathname + window.location.search);
-            showDashboard();
-            return;
-        }
-    }
+// ── Page load: restaura sessão salva ──
+(function checkSession() {
     if (getToken()) {
         showDashboard();
     }
@@ -711,28 +784,35 @@ function handleAuthError(resp) {
 // ── Login ──
 document.getElementById('btnLogin').addEventListener('click', doLogin);
 document.getElementById('emailInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('passwordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
 
 async function doLogin() {
-    const email = document.getElementById('emailInput').value.trim();
-    if (!email) return;
+    const email    = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    if (!email || !password) return;
     document.getElementById('loginError').style.display = 'none';
-    document.getElementById('magicLinkSent').style.display = 'none';
+    document.getElementById('btnLogin').disabled = true;
+    document.getElementById('btnLogin').textContent = 'Entrando...';
 
     try {
-        const resp = await fetch('/api/auth/magic-link', {
+        const resp = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, role: 'super_admin' }),
+            body: JSON.stringify({ email, password }),
         });
-        if (resp.ok) {
-            document.getElementById('magicLinkSent').textContent =
-                'Magic link enviado para ' + email + '. Verifique sua caixa de entrada.';
-            document.getElementById('magicLinkSent').style.display = 'block';
+        const data = await resp.json();
+        if (resp.ok && data.access_token) {
+            setCookie('sb-access-token', data.access_token, 7);
+            showDashboard();
         } else {
+            document.getElementById('loginError').textContent = data.error || 'E-mail ou senha incorretos.';
             document.getElementById('loginError').style.display = 'block';
         }
     } catch (e) {
         document.getElementById('loginError').style.display = 'block';
+    } finally {
+        document.getElementById('btnLogin').disabled = false;
+        document.getElementById('btnLogin').textContent = 'Entrar';
     }
 }
 
@@ -745,6 +825,7 @@ function showDashboard() {
     loadUsage();
     loadInvoices();
     loadPlans();
+    loadApiKeys();
 }
 
 // ── Logout ──
@@ -756,17 +837,28 @@ document.getElementById('btnLogout').addEventListener('click', async () => {
     document.getElementById('dashboard').classList.remove('active');
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('emailInput').value = '';
+    document.getElementById('passwordInput').value = '';
     document.getElementById('loginError').style.display = 'none';
-    document.getElementById('magicLinkSent').style.display = 'none';
 });
 
 // ── Tabs ──
 document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+        const tabId = btn.dataset.tab;
+        if (!tabId) return;
+        const target = document.getElementById(tabId);
+        if (!target) return;
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
-        document.getElementById(btn.dataset.tab).classList.add('active');
+        target.classList.add('active');
+        // Recarrega dados da aba ao clicar
+        if (tabId === 'tab-clinicas')    loadClinics();
+        if (tabId === 'tab-uso')         loadUsage();
+        if (tabId === 'tab-financeiro')  loadInvoices();
+        if (tabId === 'tab-planos')      loadPlans();
+        if (tabId === 'tab-apis')        loadApiKeys();
+        if (tabId === 'tab-dashboard')   loadOverview();
     });
 });
 
@@ -814,17 +906,17 @@ async function loadOverview() {
         if (!resp.ok) return;
         const data = await resp.json();
         document.getElementById('mClinics').textContent = data.active_clinics ?? '—';
-        document.getElementById('mMrr').textContent = data.mrr != null
-            ? (data.mrr / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+        document.getElementById('mMrr').textContent = data.mrr_cents != null
+            ? (data.mrr_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
             : '—';
         document.getElementById('mAnalyses').textContent = data.analyses_this_month ?? '—';
-        document.getElementById('mCost').textContent = data.cost_this_month != null
-            ? (data.cost_this_month / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+        document.getElementById('mCost').textContent = data.cost_this_month_cents != null
+            ? (data.cost_this_month_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
             : '—';
         document.getElementById('mMargin').textContent = data.gross_margin_pct != null
             ? data.gross_margin_pct.toFixed(1) + '%'
             : '—';
-        document.getElementById('mOverdue').textContent = data.overdue_count ?? '—';
+        document.getElementById('mOverdue').textContent = data.past_due_clinics ?? '—';
     } catch (e) { /* silently fail */ }
 }
 
@@ -870,14 +962,14 @@ function renderClinics(clinics) {
         const toggleLabel = c.status === 'suspended' ? 'Ativar' : 'Suspender';
         const toggleAction = c.status === 'suspended' ? 'activate' : 'suspend';
         return '<tr>' +
-            '<td><a href="https://' + c.subdomain + '.cscrm.ai/admin" target="_blank">' + (c.subdomain || '—') + '</a></td>' +
+            '<td><a href="https://' + c.subdomain + '.allbele.app/admin" target="_blank">' + (c.subdomain || '—') + '</a></td>' +
             '<td>' + (c.name || '—') + '</td>' +
             '<td>' + (c.plan_name || '—') + '</td>' +
             '<td>' + statusBadge + '</td>' +
             '<td>' + subBadge + '</td>' +
             '<td>' + (c.analyses_this_month ?? '—') + '</td>' +
             '<td style="display:flex;gap:.4rem;flex-wrap:wrap;">' +
-                '<a href="https://' + c.subdomain + '.cscrm.ai/admin" target="_blank" class="btn btn-sm btn-soft">Abrir</a>' +
+                '<a href="https://' + c.subdomain + '.allbele.app/admin" target="_blank" class="btn btn-sm btn-soft">Abrir</a>' +
                 '<button class="btn btn-sm btn-soft" onclick="toggleClinicStatus(\'' + c.id + '\',\'' + toggleAction + '\')">' + toggleLabel + '</button>' +
                 '<button class="btn btn-sm btn-danger" onclick="deleteClinic(\'' + c.id + '\')">Excluir</button>' +
             '</td>' +
@@ -1124,6 +1216,92 @@ function renderPlansPlaceholder() {
         { name: 'Enterprise', price_cents: 199700, monthly_limit: null, stripe_price_id: '', active: true },
     ];
     renderPlans(plans);
+}
+
+// ── API Keys ──
+async function loadApiKeys() {
+    try {
+        const resp = await fetch('/api/super/clinics', { headers: authHeaders() });
+        if (handleAuthError(resp)) return;
+        if (!resp.ok) return;
+        const clinics = await resp.json();
+        renderApiKeys(clinics);
+    } catch (e) {
+        document.getElementById('apiKeysTableBody').innerHTML = '<tr><td colspan="5" class="table-state">Erro ao carregar dados.</td></tr>';
+    }
+}
+
+function renderApiKeys(clinics) {
+    if (!clinics || !clinics.length) {
+        document.getElementById('apiKeysTableBody').innerHTML = '<tr><td colspan="5" class="table-state">Nenhuma cl&#237;nica encontrada.</td></tr>';
+        return;
+    }
+    document.getElementById('apiKeysTableBody').innerHTML = clinics.map(c => {
+        const cfg  = c.config || {};
+        const keys = cfg.api_keys || {};
+        const falSet    = keys.fal_key        ? '<span class="badge-pill badge-active">&#10003; Configurada</span>' : '<span class="badge-pill badge-canceled">Global</span>';
+        const googleSet = keys.google_api_key ? '<span class="badge-pill badge-active">&#10003; Configurada</span>' : '<span class="badge-pill badge-canceled">Global</span>';
+        const safeKeys  = JSON.stringify(keys).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/</g,'\\u003c');
+        const safeName  = (c.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return '<tr>' +
+            '<td>' + (c.name || '&#8212;') + '</td>' +
+            '<td>' + (c.subdomain || '&#8212;') + '</td>' +
+            '<td>' + falSet + '</td>' +
+            '<td>' + googleSet + '</td>' +
+            '<td><button class="btn btn-sm btn-soft" onclick="openApiKeyModal(\'' + c.id + '\',\'' + safeName + '\',' + safeKeys + ')">Configurar</button></td>' +
+        '</tr>';
+    }).join('');
+}
+
+function openApiKeyModal(clinicId, clinicName, keys) {
+    document.getElementById('apiKeyClinicId').value       = clinicId;
+    document.getElementById('apiKeyClinicName').textContent = clinicName;
+    document.getElementById('apiKeyFal').value    = keys.fal_key        || '';
+    document.getElementById('apiKeyGoogle').value = keys.google_api_key || '';
+    const result = document.getElementById('apiKeyResult');
+    result.style.display = 'none';
+    result.className = 'modal-result';
+    document.getElementById('apiKeyModal').classList.add('open');
+}
+
+function closeApiKeyModal() {
+    document.getElementById('apiKeyModal').classList.remove('open');
+}
+
+document.getElementById('apiKeyModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('apiKeyModal')) closeApiKeyModal();
+});
+
+async function saveApiKeys() {
+    const clinicId  = document.getElementById('apiKeyClinicId').value;
+    const falKey    = document.getElementById('apiKeyFal').value.trim();
+    const googleKey = document.getElementById('apiKeyGoogle').value.trim();
+    const result    = document.getElementById('apiKeyResult');
+    result.style.display = 'none';
+
+    try {
+        const resp = await fetch('/api/super/clinics/' + clinicId + '/api-keys', {
+            method: 'PUT',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ fal_key: falKey, google_api_key: googleKey }),
+        });
+        if (handleAuthError(resp)) return;
+        const data = await resp.json();
+        if (resp.ok) {
+            result.textContent = 'Chaves salvas com sucesso!';
+            result.className = 'modal-result success';
+            result.style.display = 'block';
+            setTimeout(() => { closeApiKeyModal(); loadApiKeys(); }, 1200);
+        } else {
+            result.textContent = data.error || 'Erro ao salvar chaves.';
+            result.className = 'modal-result error';
+            result.style.display = 'block';
+        }
+    } catch (e) {
+        result.textContent = 'Erro de conex&#227;o.';
+        result.className = 'modal-result error';
+        result.style.display = 'block';
+    }
 }
 
 // ── Toast ──
