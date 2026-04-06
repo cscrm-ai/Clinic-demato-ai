@@ -27,6 +27,7 @@ type Finding = {
 };
 
 type Report = {
+  skin_score?: number;
   skin_type: string;
   fitzpatrick_type: string;
   findings: Finding[];
@@ -460,13 +461,21 @@ export default function PatientPage() {
           </div>
         )}
 
-        {/* Skin type + fitzpatrick */}
+        {/* Skin type + fitzpatrick + score */}
         <Card className="border-0 shadow-sm bg-white/70">
           <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
               <Badge className="text-xs font-mono font-bold shrink-0" style={{ background: "var(--color-accent,#D99C94)", color: "#fff" }}>
                 FOTOTIPO {report.fitzpatrick_type}
               </Badge>
+              {typeof report.skin_score === "number" && (
+                <Badge className="text-xs font-mono font-bold shrink-0" style={{
+                  background: report.skin_score >= 80 ? "#22c55e" : report.skin_score >= 60 ? "#eab308" : report.skin_score >= 40 ? "#f97316" : "#ef4444",
+                  color: "#fff",
+                }}>
+                  SCORE {report.skin_score}/100
+                </Badge>
+              )}
               <button onClick={reset} className="ml-auto text-xs opacity-50 hover:opacity-100 underline">
                 Nova análise
               </button>

@@ -99,6 +99,10 @@ class PlanoTerapeutico(BaseModel):
 class SkinAnalysisReport(BaseModel):
     """Relatorio completo de analise dermatologica para clinica estetica."""
 
+    skin_score: int = Field(
+        ...,
+        description="Pontuacao geral de saude da pele de 0 a 100 (100 = pele perfeita sem achados, 0 = pele com multiplos achados graves). Desconte pontos proporcionalmente: achado PRIORITARIO -15pts, RECOMENDADO -8pts, OPCIONAL -3pts.",
+    )
     fitzpatrick_type: Literal["I", "II", "III", "IV", "V", "VI"] = Field(
         ...,
         description="Fototipo identificado na escala de Fitzpatrick",
