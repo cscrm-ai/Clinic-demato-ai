@@ -357,6 +357,35 @@ export default function SuperAdminPage() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+
+            {/* Chart: analyses + cost per clinic */}
+            {clinics.length > 0 && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="text-base">Análises e custo por clínica (mês atual)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={Math.max(200, clinics.length * 40)}>
+                    <BarChart
+                      data={clinics.map((c) => {
+                        const u = c.usage_this_month;
+                        const analyses = typeof u === "object" ? ((u as Record<string, unknown>)?.analyses_count ?? 0) : (u ?? 0);
+                        const cost = typeof u === "object" ? (Number((u as Record<string, unknown>)?.total_cost_cents ?? 0) / 100) : 0;
+                        return { name: c.subdomain, analyses: Number(analyses), cost: Math.round(cost * 100) / 100 };
+                      })}
+                      layout="vertical"
+                      margin={{ left: 80 }}
+                    >
+                      <XAxis type="number" tick={{ fontSize: 11 }} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={75} />
+                      <Tooltip formatter={(v: number, name: string) => [name === "cost" ? `R$ ${v.toFixed(2)}` : v, name === "cost" ? "Custo" : "Análises"]} />
+                      <Bar dataKey="analyses" fill="#D99C94" radius={[0, 4, 4, 0]} name="Análises" />
+                      <Bar dataKey="cost" fill="#8b5cf6" radius={[0, 4, 4, 0]} name="Custo (R$)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* ── Clínicas ── */}
