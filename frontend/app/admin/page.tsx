@@ -51,6 +51,7 @@ interface Analysis {
   skin_type?: string;
   fitzpatrick_type?: string;
   skin_score?: number;
+  duration_ms?: number;
   image_url?: string;
   findings?: AnalysisFinding[];
   plano_terapeutico?: { curto_prazo?: string; medio_prazo?: string; longo_prazo?: string };
@@ -723,6 +724,7 @@ export default function AdminPage() {
                               <p className="text-xs text-muted-foreground">
                                 {new Date(a.created_at).toLocaleString("pt-BR")} · Fototipo {a.fitzpatrick_type || "—"}
                                 {typeof score === "number" && ` · Score ${score}/100`}
+                                {a.duration_ms ? ` · ${Math.round(a.duration_ms / 1000)}s` : ""}
                               </p>
                             </div>
                             <Badge variant="outline" className="text-xs shrink-0">
