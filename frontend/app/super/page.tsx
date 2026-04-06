@@ -325,17 +325,19 @@ export default function SuperAdminPage() {
           {/* ── Dashboard ── */}
           <TabsContent value="dashboard">
             <h1 className="text-2xl font-bold text-[#3A3330] mb-6">Dashboard</h1>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
               {[
-                { label: "Análises (30d)", value: overview?.analyses_this_month },
-                { label: "Clínicas ativas", value: overview?.active_clinics },
-                { label: "MRR", value: overview?.mrr_cents ? `R$ ${(Number(overview.mrr_cents) / 100).toFixed(0)}` : null },
-                { label: "Inadimplentes", value: overview?.past_due_clinics },
+                { label: "Análises (30d)", value: overview?.analyses_this_month, color: "#D99C94" },
+                { label: "Clínicas ativas", value: overview?.active_clinics, color: "#22c55e" },
+                { label: "Total clínicas", value: overview?.total_clinics, color: "#3b82f6" },
+                { label: "MRR", value: overview?.mrr_cents ? `R$ ${(Number(overview.mrr_cents) / 100).toFixed(0)}` : null, color: "#8b5cf6" },
+                { label: "Custo/mês", value: overview?.cost_this_month_cents ? `R$ ${(Number(overview.cost_this_month_cents) / 100).toFixed(2)}` : null, color: "#f97316" },
+                { label: "Inadimplentes", value: overview?.past_due_clinics, color: "#ef4444" },
               ].map((m) => (
                 <Card key={m.label}>
-                  <CardContent className="pt-6">
-                    <p className="text-3xl font-bold text-[#3A3330]">{m.value != null ? String(m.value) : "—"}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{m.label}</p>
+                  <CardContent className="pt-5 pb-4">
+                    <p className="text-2xl font-bold" style={{ color: m.color }}>{m.value != null ? String(m.value) : "—"}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{m.label}</p>
                   </CardContent>
                 </Card>
               ))}

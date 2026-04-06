@@ -7,7 +7,7 @@ no frontend — o backend nunca usa a anon key.
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Any
 
@@ -238,12 +238,38 @@ def get_super_admin_overview() -> dict:
         .execute()
     )
 
+    # Total de clínicas (todas)
+    total = db.table("clinics").select("id", count="exact").execute()
+
+    # Chart: análises por dia dos últimos 30 dias
+    thirty_days_ago = (now - timedelta(days=30)).isoformat()
+    chart_raw = (
+        db.table("analyses")
+        .select("created_at")
+        .gte("created_at", thirty_days_ago)
+        .execute()
+    )
+    # Agrupar por dia
+    from collections import Counter
+    day_counts: Counter[str] = Counter()
+    for row in chart_raw.data or []:
+        day = row["created_at"][:10]  # "2026-04-06"
+        day_counts[day] += 1
+    # Gerar array com todos os 30 dias
+    chart_data = []
+    for i in range(30):
+        d = now - timedelta(days=29 - i)
+        ds = d.strftime("%Y-%m-%d")
+        chart_data.append({"date": ds, "count": day_counts.get(ds, 0)})
+
     return {
         "active_clinics": active.count or 0,
+        "total_clinics": total.count or 0,
         "analyses_this_month": analyses.count or 0,
         "cost_this_month_cents": round(total_cost, 2),
         "mrr_cents": mrr,
         "past_due_clinics": past_due.count or 0,
+        "chart_data": chart_data,
     }
 
 
