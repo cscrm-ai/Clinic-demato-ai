@@ -7,14 +7,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-type Finding = {
-  finding_name: string;
-  severity: string;
-  description: string;
-  procedimentos_indicados?: { nome: string; sessoes_estimadas?: number }[];
+type ProcedimentoIndicado = {
+  nome: string;
+  tipo?: string;
+  descricao_breve?: string;
+  sessoes_estimadas?: string;
+  horizonte?: string;
 };
 
-type Routine = { step: number; product_type: string; how_to_apply?: string };
+type Finding = {
+  description: string;
+  zone?: string;
+  priority?: string;
+  conduta?: string;
+  procedimentos_indicados?: ProcedimentoIndicado[];
+  clinical_note?: string;
+  x_point?: number;
+  y_point?: number;
+};
 
 type Report = {
   skin_type: string;
@@ -25,16 +35,15 @@ type Report = {
     medio_prazo?: string;
     longo_prazo?: string;
   };
-  am_routine?: Routine[];
-  pm_routine?: Routine[];
+  am_routine?: string;
+  pm_routine?: string;
   general_observations?: string;
 };
 
-const SEVERITY_COLOR: Record<string, string> = {
-  leve: "bg-green-100 text-green-800",
-  moderada: "bg-yellow-100 text-yellow-800",
-  acentuada: "bg-orange-100 text-orange-800",
-  intensa: "bg-red-100 text-red-800",
+const PRIORITY_COLOR: Record<string, string> = {
+  PRIORITARIO: "bg-red-100 text-red-800",
+  RECOMENDADO: "bg-yellow-100 text-yellow-800",
+  OPCIONAL: "bg-green-100 text-green-800",
 };
 
 const ANALYSIS_STEPS = [
@@ -392,19 +401,20 @@ export default function PatientPage() {
                 <Card key={i} className="border-0 shadow-sm bg-white/70">
                   <CardContent className="pt-4 pb-3 space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-sm">{f.finding_name}</span>
-                      {f.severity && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEVERITY_COLOR[f.severity.toLowerCase()] || "bg-gray-100 text-gray-700"}`}>
-                          {f.severity}
+                      <span className="font-semibold text-sm">{f.description}</span>
+                      {f.priority && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_COLOR[f.priority] || "bg-gray-100 text-gray-700"}`}>
+                          {f.priority}
                         </span>
                       )}
                     </div>
-                    {f.description && <p className="text-xs opacity-70">{f.description}</p>}
+                    {f.zone && <p className="text-xs opacity-50">{f.zone}</p>}
+                    {f.conduta && <p className="text-xs opacity-70">{f.conduta}</p>}
                     {f.procedimentos_indicados?.length ? (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {f.procedimentos_indicados.map((p, j) => (
                           <Badge key={j} variant="outline" className="text-xs">
-                            {p.nome}{p.sessoes_estimadas ? ` · ${p.sessoes_estimadas}x` : ""}
+                            {p.nome}{p.sessoes_estimadas ? ` · ${p.sessoes_estimadas}` : ""}
                           </Badge>
                         ))}
                       </div>
@@ -444,20 +454,16 @@ export default function PatientPage() {
           </section>
         )}
 
-        {(report.am_routine?.length || report.pm_routine?.length) ? (
+        {(report.am_routine || report.pm_routine) ? (
           <section>
             <h2 className="font-semibold text-sm uppercase tracking-wide opacity-60 mb-3">Rotina de skincare</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {[{ label: "🌅 Manhã", items: report.am_routine }, { label: "🌙 Noite", items: report.pm_routine }].map(({ label, items }) =>
-                items?.length ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[{ label: "🌅 Manhã", text: report.am_routine }, { label: "🌙 Noite", text: report.pm_routine }].map(({ label, text }) =>
+                text ? (
                   <Card key={label} className="border-0 shadow-sm bg-white/70">
                     <CardContent className="pt-4 pb-3">
                       <p className="font-semibold text-xs mb-2">{label}</p>
-                      <ol className="space-y-1">
-                        {items.map((r, i) => (
-                          <li key={i} className="text-xs opacity-75">{r.step}. {r.product_type}</li>
-                        ))}
-                      </ol>
+                      <p className="text-xs opacity-75 whitespace-pre-line">{text}</p>
                     </CardContent>
                   </Card>
                 ) : null
