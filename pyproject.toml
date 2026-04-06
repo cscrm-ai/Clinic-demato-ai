@@ -13,5 +13,7 @@ dependencies = [
     "pillow",
     "python-dotenv",
     "python-multipart",
+    "stripe>=8.0.0",
+    "supabase>=2.0.0",
     "uvicorn",
 ]

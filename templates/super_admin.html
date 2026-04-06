@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super Admin — cscrm.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #F8F9FA;
+    color: #3A3330;
+    min-height: 100vh;
+    font-size: 14px;
+}
+
+/* ── Login ── */
+.login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1.5rem;
+}
+.login-card {
+    background: #fff;
+    padding: 2.5rem 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+}
+.login-card h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.25rem; color: #3A3330; }
+.login-card .subtitle { font-size: 0.82rem; color: #D99C94; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 1.75rem; }
+.login-card input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+    color: #3A3330;
+}
+.login-card input:focus { outline: none; border-color: #D99C94; }
+.btn-login {
+    width: 100%;
+    padding: 0.75rem;
+    background: #3A3330;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+}
+.btn-login:hover { background: #2A2320; }
+.login-error { color: #E74C3C; font-size: 0.82rem; margin-top: 0.75rem; display: none; }
+.magic-link-sent {
+    display: none;
+    background: #F0FDF4;
+    border: 1px solid #86EFAC;
+    border-radius: 0.5rem;
+    padding: 0.875rem 1rem;
+    font-size: 0.85rem;
+    color: #166534;
+    margin-top: 0.75rem;
+    line-height: 1.5;
+}
+
+/* ── Dashboard ── */
+.dashboard { display: none; }
+.dashboard.active { display: block; }
+.login-screen.hidden { display: none; }
+
+/* ── Top Bar ── */
+.top-bar {
+    background: #fff;
+    border-bottom: 1px solid #E8E8E8;
+    padding: 0.875rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+.top-bar-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #3A3330;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.top-bar-title .badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    background: #D99C94;
+    color: #fff;
+    padding: 0.1rem 0.45rem;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.btn-logout {
+    padding: 0.4rem 0.9rem;
+    background: transparent;
+    color: #999;
+    border: 1px solid #E0E0E0;
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+.btn-logout:hover { border-color: #D99C94; color: #3A3330; }
+
+/* ── Tabs ── */
+.tabs-bar {
+    background: #fff;
+    border-bottom: 1px solid #E8E8E8;
+    padding: 0 2rem;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+}
+.tab-btn {
+    padding: 0.875rem 1.25rem;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #999;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+}
+.tab-btn:hover { color: #3A3330; }
+.tab-btn.active { color: #3A3330; border-bottom-color: #D99C94; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ── Layout ── */
+.page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ── Cards ── */
+.card {
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+.card h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #F0F0F0;
+    color: #3A3330;
+}
+
+/* ── Metric Cards ── */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+}
+.metric-card {
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.25rem 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+.metric-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+.metric-value {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: #3A3330;
+    line-height: 1;
+}
+.metric-value.accent { color: #D99C94; }
+.metric-value.green { color: #16A34A; }
+.metric-value.red { color: #B91C1C; }
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; }
+table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+.data-table th {
+    text-align: left;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #F0F0F0;
+    white-space: nowrap;
+}
+.data-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid #F8F8F8;
+    color: #3A3330;
+    vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover { background: #FAFAFA; }
+.data-table a { color: #D99C94; text-decoration: none; }
+.data-table a:hover { text-decoration: underline; }
+
+/* ── Badges ── */
+.badge-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.badge-trial { background: #DBEAFE; color: #1D4ED8; }
+.badge-active { background: #DCFCE7; color: #166534; }
+.badge-suspended { background: #FEF3C7; color: #92400E; }
+.badge-canceled { background: #F3F4F6; color: #6B7280; }
+.badge-past_due { background: #FEE2E2; color: #B91C1C; }
+.badge-trialing { background: #DBEAFE; color: #1D4ED8; }
+.badge-paid { background: #DCFCE7; color: #166534; }
+.badge-open { background: #FEF9C3; color: #854D0E; }
+.badge-void { background: #F3F4F6; color: #6B7280; }
+.badge-uncollectible { background: #FEE2E2; color: #B91C1C; }
+
+/* ── Filter Row ── */
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+.filter-row select,
+.filter-row input[type="text"] {
+    padding: 0.5rem 0.75rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: 0.5rem;
+    font-size: 0.82rem;
+    font-family: inherit;
+    color: #3A3330;
+    background: #fff;
+    transition: border-color 0.2s;
+}
+.filter-row select:focus,
+.filter-row input[type="text"]:focus { outline: none; border-color: #D99C94; }
+.filter-row input[type="text"] { min-width: 200px; }
+.filter-spacer { flex: 1; }
+
+/* ── Buttons ── */
+.btn {
+    padding: 0.5rem 1.1rem;
+    border-radius: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    border: none;
+    transition: filter 0.2s, background 0.2s;
+    white-space: nowrap;
+}
+.btn-primary { background: #3A3330; color: #fff; }
+.btn-primary:hover { background: #2A2320; }
+.btn-accent { background: #D99C94; color: #fff; }
+.btn-accent:hover { filter: brightness(1.08); }
+.btn-soft { background: #F0EBE3; color: #3A3330; }
+.btn-soft:hover { background: #E5DDD5; }
+.btn-danger { background: #FEE2E2; color: #B91C1C; border: none; }
+.btn-danger:hover { background: #FECACA; }
+.btn-sm { padding: 0.3rem 0.7rem; font-size: 0.75rem; }
+
+/* ── Modal ── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+.modal-inner {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 2rem;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+.modal-inner h2 { font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem; }
+.btn-modal-close {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: #999;
+    line-height: 1;
+}
+.form-field { margin-bottom: 1rem; }
+.form-field:last-of-type { margin-bottom: 0; }
+.form-field label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+}
+.form-field input,
+.form-field select {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: #3A3330;
+    transition: border-color 0.2s;
+}
+.form-field input:focus,
+.form-field select:focus { outline: none; border-color: #D99C94; }
+.modal-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; justify-content: flex-end; }
+.modal-result {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.82rem;
+    display: none;
+}
+.modal-result.success { background: #F0FDF4; color: #166534; border: 1px solid #86EFAC; }
+.modal-result.error { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+
+/* ── Chart container ── */
+.chart-container {
+    position: relative;
+    height: 220px;
+    width: 100%;
+}
+.chart-placeholder-note {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #CCC;
+    margin-top: 0.5rem;
+}
+
+/* ── Usage totals ── */
+.usage-total {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #F0F0F0;
+    font-size: 0.82rem;
+    color: #888;
+    margin-top: 0.5rem;
+}
+.usage-total strong { color: #3A3330; font-weight: 700; }
+
+/* ── Table loading/empty states ── */
+.table-state {
+    text-align: center;
+    padding: 2rem;
+    color: #CCC;
+    font-size: 0.85rem;
+}
+
+/* ── Toast ── */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #3A3330;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: transform 0.3s;
+    z-index: 400;
+    white-space: nowrap;
+}
+.toast.visible { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+    <div class="login-card">
+        <h1>Super Admin</h1>
+        <div class="subtitle">cscrm.ai</div>
+        <input type="email" id="emailInput" placeholder="seu@email.com" autofocus>
+        <button class="btn-login" id="btnLogin">Enviar Magic Link</button>
+        <div class="login-error" id="loginError">Erro ao enviar o link. Verifique o e-mail.</div>
+        <div class="magic-link-sent" id="magicLinkSent"></div>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="top-bar-title">
+            Super Admin <span class="badge">cscrm.ai</span>
+        </div>
+        <button class="btn-logout" id="btnLogout">Sair</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-bar">
+        <button class="tab-btn active" data-tab="tab-dashboard">Dashboard</button>
+        <button class="tab-btn" data-tab="tab-clinicas">Cl&#237;nicas</button>
+        <button class="tab-btn" data-tab="tab-uso">Uso &amp; Custos</button>
+        <button class="tab-btn" data-tab="tab-financeiro">Financeiro</button>
+        <button class="tab-btn" data-tab="tab-planos">Planos</button>
+    </div>
+
+    <!-- ── TAB: Dashboard ── -->
+    <div class="tab-content active" id="tab-dashboard">
+        <div class="page">
+            <div class="metrics-grid" id="overviewMetrics">
+                <div class="metric-card"><div class="metric-label">Cl&#237;nicas Ativas</div><div class="metric-value" id="mClinics">—</div></div>
+                <div class="metric-card"><div class="metric-label">MRR</div><div class="metric-value accent" id="mMrr">—</div></div>
+                <div class="metric-card"><div class="metric-label">An&#225;lises/m&#234;s</div><div class="metric-value" id="mAnalyses">—</div></div>
+                <div class="metric-card"><div class="metric-label">Custo/m&#234;s</div><div class="metric-value" id="mCost">—</div></div>
+                <div class="metric-card"><div class="metric-label">Margem Bruta %</div><div class="metric-value green" id="mMargin">—</div></div>
+                <div class="metric-card"><div class="metric-label">Inadimplentes</div><div class="metric-value red" id="mOverdue">—</div></div>
+            </div>
+
+            <div class="card">
+                <h2>An&#225;lises por dia (30 dias)</h2>
+                <div class="chart-container">
+                    <canvas id="analysesChart"></canvas>
+                </div>
+                <div class="chart-placeholder-note">Dados em breve</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB: Clínicas ── -->
+    <div class="tab-content" id="tab-clinicas">
+        <div class="page">
+            <div class="card">
+                <h2>Cl&#237;nicas</h2>
+                <div class="filter-row">
+                    <select id="filterClinicStatus">
+                        <option value="">Todos os status</option>
+                        <option value="trial">Trial</option>
+                        <option value="active">Ativo</option>
+                        <option value="suspended">Suspenso</option>
+                        <option value="canceled">Cancelado</option>
+                    </select>
+                    <input type="text" id="filterClinicSearch" placeholder="Buscar por nome ou subdom&#237;nio...">
+                    <div class="filter-spacer"></div>
+                    <button class="btn btn-primary" onclick="openNewClinicModal()">+ Nova Cl&#237;nica</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Subdom&#237;nio</th>
+                                <th>Nome</th>
+                                <th>Plano</th>
+                                <th>Status</th>
+                                <th>Subscription</th>
+                                <th>An&#225;lises/m&#234;s</th>
+                                <th>A&#231;&#245;es</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clinicsTableBody">
+                            <tr><td colspan="7" class="table-state">Carregando cl&#237;nicas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB: Uso & Custos ── -->
+    <div class="tab-content" id="tab-uso">
+        <div class="page">
+            <div class="card">
+                <h2>Uso &amp; Custos</h2>
+                <div class="filter-row">
+                    <select id="filterUsageClinic">
+                        <option value="">Todas as cl&#237;nicas</option>
+                    </select>
+                    <select id="filterUsageProvider">
+                        <option value="">Todos os providers</option>
+                        <option value="gemini">Gemini</option>
+                        <option value="moondream_fal">Moondream (fal)</option>
+                    </select>
+                    <div class="filter-spacer"></div>
+                    <button class="btn btn-soft" onclick="loadUsage()">Atualizar</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Cl&#237;nica</th>
+                                <th>Provider</th>
+                                <th>Opera&#231;&#227;o</th>
+                                <th>Tokens In</th>
+                                <th>Tokens Out</th>
+                                <th>Chamadas</th>
+                                <th>Custo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usageTableBody">
+                            <tr><td colspan="8" class="table-state">Carregando registros...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="usage-total">Custo total filtrado: <strong id="usageTotalCost">R$ 0,00</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB: Financeiro ── -->
+    <div class="tab-content" id="tab-financeiro">
+        <div class="page">
+            <div class="card">
+                <h2>Faturas</h2>
+                <div class="filter-row">
+                    <div class="filter-spacer"></div>
+                    <button class="btn btn-soft" onclick="syncPlans()">Sync Planos &#x2192; Stripe</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Cl&#237;nica</th>
+                                <th>Data</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Links</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoicesTableBody">
+                            <tr><td colspan="5" class="table-state">Carregando faturas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB: Planos ── -->
+    <div class="tab-content" id="tab-planos">
+        <div class="page">
+            <div class="card">
+                <h2>Planos</h2>
+                <div class="filter-row">
+                    <div class="filter-spacer"></div>
+                    <button class="btn btn-soft" onclick="syncPlans()">Sincronizar com Stripe</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Pre&#231;o</th>
+                                <th>An&#225;lises/m&#234;s</th>
+                                <th>Stripe Price ID</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="plansTableBody">
+                            <tr><td colspan="5" class="table-state">Carregando planos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- NOVA CLÍNICA MODAL -->
+<div class="modal-overlay" id="newClinicModal">
+    <div class="modal-inner">
+        <button class="btn-modal-close" onclick="closeNewClinicModal()">&#x2715;</button>
+        <h2>Nova Cl&#237;nica</h2>
+        <div class="form-field">
+            <label>Subdom&#237;nio</label>
+            <input type="text" id="ncSubdomain" placeholder="minha-clinica">
+        </div>
+        <div class="form-field">
+            <label>Nome da Cl&#237;nica</label>
+            <input type="text" id="ncName" placeholder="Cl&#237;nica Bella">
+        </div>
+        <div class="form-field">
+            <label>E-mail do Respons&#225;vel</label>
+            <input type="email" id="ncEmail" placeholder="admin@clinica.com">
+        </div>
+        <div class="form-field">
+            <label>Plano</label>
+            <select id="ncPlan">
+                <option value="">Selecionar plano...</option>
+                <option value="free">Free</option>
+                <option value="starter">Starter</option>
+                <option value="pro">Pro</option>
+                <option value="enterprise">Enterprise</option>
+            </select>
+        </div>
+        <div class="modal-result" id="newClinicResult"></div>
+        <div class="modal-actions">
+            <button class="btn btn-soft" onclick="closeNewClinicModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="createClinic()">Criar Cl&#237;nica</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Cookie helpers ──
+function setCookie(name, value, days) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+}
+function getCookie(name) {
+    return document.cookie.split('; ').reduce((acc, c) => {
+        const [k, v] = c.split('=');
+        return k === name ? decodeURIComponent(v) : acc;
+    }, '');
+}
+function deleteCookie(name) {
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+}
+function getToken() {
+    return getCookie('sb-access-token');
+}
+function authHeaders(extra) {
+    return Object.assign({ 'Authorization': 'Bearer ' + getToken() }, extra || {});
+}
+
+// ── Handle 401/403 ──
+function handleAuthError(resp) {
+    if (resp.status === 401 || resp.status === 403) {
+        deleteCookie('sb-access-token');
+        document.getElementById('dashboard').classList.remove('active');
+        document.getElementById('loginScreen').classList.remove('hidden');
+        return true;
+    }
+    return false;
+}
+
+// ── Page load: check magic link token in URL hash ──
+(function checkMagicLink() {
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token=')) {
+        const params = new URLSearchParams(hash.replace(/^#/, ''));
+        const token = params.get('access_token');
+        if (token) {
+            setCookie('sb-access-token', token, 7);
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+            showDashboard();
+            return;
+        }
+    }
+    if (getToken()) {
+        showDashboard();
+    }
+})();
+
+// ── Login ──
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('emailInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+
+async function doLogin() {
+    const email = document.getElementById('emailInput').value.trim();
+    if (!email) return;
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('magicLinkSent').style.display = 'none';
+
+    try {
+        const resp = await fetch('/api/auth/magic-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, role: 'super_admin' }),
+        });
+        if (resp.ok) {
+            document.getElementById('magicLinkSent').textContent =
+                'Magic link enviado para ' + email + '. Verifique sua caixa de entrada.';
+            document.getElementById('magicLinkSent').style.display = 'block';
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+        }
+    } catch (e) {
+        document.getElementById('loginError').style.display = 'block';
+    }
+}
+
+function showDashboard() {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('dashboard').classList.add('active');
+    initChart();
+    loadOverview();
+    loadClinics();
+    loadUsage();
+    loadInvoices();
+    loadPlans();
+}
+
+// ── Logout ──
+document.getElementById('btnLogout').addEventListener('click', async () => {
+    try {
+        await fetch('/api/auth/logout', { method: 'POST', headers: authHeaders() });
+    } catch (_) {}
+    deleteCookie('sb-access-token');
+    document.getElementById('dashboard').classList.remove('active');
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('emailInput').value = '';
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('magicLinkSent').style.display = 'none';
+});
+
+// ── Tabs ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+});
+
+// ── Chart ──
+let chartInstance = null;
+function initChart() {
+    const ctx = document.getElementById('analysesChart').getContext('2d');
+    const labels = [];
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        labels.push(d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+    }
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Análises',
+                data: new Array(30).fill(0),
+                backgroundColor: 'rgba(217,156,148,0.35)',
+                borderColor: '#D99C94',
+                borderWidth: 1.5,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45, color: '#CCC', autoSkip: true, maxTicksLimit: 10 } },
+                y: { grid: { color: '#F5F5F5' }, ticks: { font: { size: 10 }, color: '#CCC', beginAtZero: true } }
+            }
+        }
+    });
+}
+
+// ── Overview ──
+async function loadOverview() {
+    try {
+        const resp = await fetch('/api/super/overview', { headers: authHeaders() });
+        if (handleAuthError(resp)) return;
+        if (!resp.ok) return;
+        const data = await resp.json();
+        document.getElementById('mClinics').textContent = data.active_clinics ?? '—';
+        document.getElementById('mMrr').textContent = data.mrr != null
+            ? (data.mrr / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            : '—';
+        document.getElementById('mAnalyses').textContent = data.analyses_this_month ?? '—';
+        document.getElementById('mCost').textContent = data.cost_this_month != null
+            ? (data.cost_this_month / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            : '—';
+        document.getElementById('mMargin').textContent = data.gross_margin_pct != null
+            ? data.gross_margin_pct.toFixed(1) + '%'
+            : '—';
+        document.getElementById('mOverdue').textContent = data.overdue_count ?? '—';
+    } catch (e) { /* silently fail */ }
+}
+
+// ── Clinics ──
+let allClinics = [];
+
+async function loadClinics() {
+    try {
+        const resp = await fetch('/api/super/clinics', { headers: authHeaders() });
+        if (handleAuthError(resp)) return;
+        if (!resp.ok) return;
+        allClinics = await resp.json();
+        populateClinicFilter(allClinics);
+        renderClinics(allClinics);
+    } catch (e) {
+        document.getElementById('clinicsTableBody').innerHTML = '<tr><td colspan="7" class="table-state">Erro ao carregar cl&#237;nicas.</td></tr>';
+    }
+}
+
+function populateClinicFilter(clinics) {
+    const sel = document.getElementById('filterUsageClinic');
+    sel.innerHTML = '<option value="">Todas as cl&#237;nicas</option>' +
+        clinics.map(c => '<option value="' + c.id + '">' + (c.name || c.subdomain) + '</option>').join('');
+}
+
+function renderClinics(clinics) {
+    const statusFilter = document.getElementById('filterClinicStatus').value;
+    const search = document.getElementById('filterClinicSearch').value.toLowerCase();
+    const filtered = clinics.filter(c => {
+        if (statusFilter && c.status !== statusFilter) return false;
+        if (search && !((c.subdomain || '').toLowerCase().includes(search) || (c.name || '').toLowerCase().includes(search))) return false;
+        return true;
+    });
+
+    if (!filtered.length) {
+        document.getElementById('clinicsTableBody').innerHTML = '<tr><td colspan="7" class="table-state">Nenhuma cl&#237;nica encontrada.</td></tr>';
+        return;
+    }
+
+    document.getElementById('clinicsTableBody').innerHTML = filtered.map(c => {
+        const statusBadge = '<span class="badge-pill badge-' + (c.status || 'canceled') + '">' + (c.status || '—') + '</span>';
+        const subBadge = c.subscription_status ? '<span class="badge-pill badge-' + c.subscription_status + '">' + c.subscription_status + '</span>' : '—';
+        const toggleLabel = c.status === 'suspended' ? 'Ativar' : 'Suspender';
+        const toggleAction = c.status === 'suspended' ? 'activate' : 'suspend';
+        return '<tr>' +
+            '<td><a href="https://' + c.subdomain + '.cscrm.ai/admin" target="_blank">' + (c.subdomain || '—') + '</a></td>' +
+            '<td>' + (c.name || '—') + '</td>' +
+            '<td>' + (c.plan_name || '—') + '</td>' +
+            '<td>' + statusBadge + '</td>' +
+            '<td>' + subBadge + '</td>' +
+            '<td>' + (c.analyses_this_month ?? '—') + '</td>' +
+            '<td style="display:flex;gap:.4rem;flex-wrap:wrap;">' +
+                '<a href="https://' + c.subdomain + '.cscrm.ai/admin" target="_blank" class="btn btn-sm btn-soft">Abrir</a>' +
+                '<button class="btn btn-sm btn-soft" onclick="toggleClinicStatus(\'' + c.id + '\',\'' + toggleAction + '\')">' + toggleLabel + '</button>' +
+                '<button class="btn btn-sm btn-danger" onclick="deleteClinic(\'' + c.id + '\')">Excluir</button>' +
+            '</td>' +
+        '</tr>';
+    }).join('');
+}
+
+document.getElementById('filterClinicStatus').addEventListener('change', () => renderClinics(allClinics));
+document.getElementById('filterClinicSearch').addEventListener('input', () => renderClinics(allClinics));
+
+async function toggleClinicStatus(id, action) {
+    try {
+        const resp = await fetch('/api/super/clinics/' + id + '/' + action, {
+            method: 'POST',
+            headers: authHeaders(),
+        });
+        if (handleAuthError(resp)) return;
+        if (resp.ok) {
+            toast('Status atualizado.');
+            loadClinics();
+        } else {
+            toast('Erro ao atualizar status.');
+        }
+    } catch (e) { toast('Erro de conex&#227;o.'); }
+}
+
+async function deleteClinic(id) {
+    if (!confirm('Excluir esta cl&#237;nica? Esta a&#231;&#227;o n&#227;o pode ser desfeita.')) return;
+    try {
+        const resp = await fetch('/api/super/clinics/' + id, {
+            method: 'DELETE',
+            headers: authHeaders(),
+        });
+        if (handleAuthError(resp)) return;
+        if (resp.ok) {
+            toast('Cl&#237;nica exclu&#237;da.');
+            loadClinics();
+        } else {
+            toast('Erro ao excluir cl&#237;nica.');
+        }
+    } catch (e) { toast('Erro de conex&#227;o.'); }
+}
+
+function openNewClinicModal() {
+    document.getElementById('ncSubdomain').value = '';
+    document.getElementById('ncName').value = '';
+    document.getElementById('ncEmail').value = '';
+    document.getElementById('ncPlan').value = '';
+    const result = document.getElementById('newClinicResult');
+    result.style.display = 'none';
+    result.className = 'modal-result';
+    document.getElementById('newClinicModal').classList.add('open');
+}
+function closeNewClinicModal() {
+    document.getElementById('newClinicModal').classList.remove('open');
+}
+document.getElementById('newClinicModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('newClinicModal')) closeNewClinicModal();
+});
+
+async function createClinic() {
+    const subdomain = document.getElementById('ncSubdomain').value.trim();
+    const name = document.getElementById('ncName').value.trim();
+    const email = document.getElementById('ncEmail').value.trim();
+    const plan_id = document.getElementById('ncPlan').value;
+
+    const result = document.getElementById('newClinicResult');
+    result.style.display = 'none';
+
+    if (!subdomain || !name || !email) {
+        result.textContent = 'Preencha todos os campos obrigat&#243;rios.';
+        result.className = 'modal-result error';
+        result.style.display = 'block';
+        return;
+    }
+
+    try {
+        const resp = await fetch('/api/super/clinics', {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ subdomain, name, email, plan_id }),
+        });
+        if (handleAuthError(resp)) return;
+        const data = await resp.json();
+        if (resp.ok) {
+            let msg = 'Cl&#237;nica criada com sucesso!';
+            if (data.checkout_url) msg += ' Checkout URL dispon&#237;vel.';
+            result.textContent = msg;
+            result.className = 'modal-result success';
+            result.style.display = 'block';
+            loadClinics();
+        } else {
+            result.textContent = data.error || 'Erro ao criar cl&#237;nica.';
+            result.className = 'modal-result error';
+            result.style.display = 'block';
+        }
+    } catch (e) {
+        result.textContent = 'Erro de conex&#227;o.';
+        result.className = 'modal-result error';
+        result.style.display = 'block';
+    }
+}
+
+// ── Usage ──
+async function loadUsage() {
+    const clinic = document.getElementById('filterUsageClinic').value;
+    const provider = document.getElementById('filterUsageProvider').value;
+    const params = new URLSearchParams();
+    if (clinic) params.set('clinic_id', clinic);
+    if (provider) params.set('provider', provider);
+
+    try {
+        const resp = await fetch('/api/super/usage?' + params.toString(), { headers: authHeaders() });
+        if (handleAuthError(resp)) return;
+        if (!resp.ok) return;
+        const records = await resp.json();
+        renderUsage(records);
+    } catch (e) {
+        document.getElementById('usageTableBody').innerHTML = '<tr><td colspan="8" class="table-state">Erro ao carregar registros.</td></tr>';
+    }
+}
+
+function renderUsage(records) {
+    if (!records || !records.length) {
+        document.getElementById('usageTableBody').innerHTML = '<tr><td colspan="8" class="table-state">Nenhum registro encontrado.</td></tr>';
+        document.getElementById('usageTotalCost').textContent = 'R$ 0,00';
+        return;
+    }
+    let totalCents = 0;
+    const rows = records.map(r => {
+        const date = new Date(r.created_at).toLocaleDateString('pt-BR');
+        const cost = (r.cost_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        totalCents += r.cost_cents || 0;
+        return '<tr>' +
+            '<td>' + date + '</td>' +
+            '<td>' + (r.clinic_name || r.clinic_id || '—') + '</td>' +
+            '<td>' + (r.provider || '—') + '</td>' +
+            '<td>' + (r.operation || '—') + '</td>' +
+            '<td>' + (r.tokens_in ?? '—') + '</td>' +
+            '<td>' + (r.tokens_out ?? '—') + '</td>' +
+            '<td>' + (r.calls ?? '—') + '</td>' +
+            '<td>' + cost + '</td>' +
+        '</tr>';
+    }).join('');
+    document.getElementById('usageTableBody').innerHTML = rows;
+    document.getElementById('usageTotalCost').textContent = (totalCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+document.getElementById('filterUsageClinic').addEventListener('change', loadUsage);
+document.getElementById('filterUsageProvider').addEventListener('change', loadUsage);
+
+// ── Invoices ──
+async function loadInvoices() {
+    try {
+        const resp = await fetch('/api/super/billing/invoices', { headers: authHeaders() });
+        if (handleAuthError(resp)) return;
+        if (!resp.ok) return;
+        const invoices = await resp.json();
+        renderInvoices(invoices);
+    } catch (e) {
+        document.getElementById('invoicesTableBody').innerHTML = '<tr><td colspan="5" class="table-state">Erro ao carregar faturas.</td></tr>';
+    }
+}
+
+function renderInvoices(invoices) {
+    if (!invoices || !invoices.length) {
+        document.getElementById('invoicesTableBody').innerHTML = '<tr><td colspan="5" class="table-state">Nenhuma fatura encontrada.</td></tr>';
+        return;
+    }
+    const rows = invoices.map(inv => {
+        const date = new Date(inv.date * 1000).toLocaleDateString('pt-BR');
+        const amount = (inv.amount_paid / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const statusClass = 'badge-' + (inv.status || 'open');
+        const statusLabel = { paid: 'Pago', open: 'Em aberto', void: 'Cancelado', uncollectible: 'Inadimplente' }[inv.status] || inv.status;
+        const links = [];
+        if (inv.invoice_pdf) links.push('<a href="' + inv.invoice_pdf + '" target="_blank">PDF</a>');
+        if (inv.hosted_invoice_url) links.push('<a href="' + inv.hosted_invoice_url + '" target="_blank">Ver</a>');
+        return '<tr>' +
+            '<td>' + (inv.clinic_name || inv.clinic_id || '—') + '</td>' +
+            '<td>' + date + '</td>' +
+            '<td>' + amount + '</td>' +
+            '<td><span class="badge-pill ' + statusClass + '">' + statusLabel + '</span></td>' +
+            '<td>' + (links.join(' &middot; ') || '—') + '</td>' +
+        '</tr>';
+    }).join('');
+    document.getElementById('invoicesTableBody').innerHTML = rows;
+}
+
+async function syncPlans() {
+    try {
+        const resp = await fetch('/api/super/billing/sync-plans', {
+            method: 'POST',
+            headers: authHeaders(),
+        });
+        if (handleAuthError(resp)) return;
+        if (resp.ok) {
+            toast('Planos sincronizados com o Stripe!');
+            loadPlans();
+        } else {
+            toast('Erro ao sincronizar planos.');
+        }
+    } catch (e) { toast('Erro de conex&#227;o.'); }
+}
+
+// ── Plans ──
+async function loadPlans() {
+    try {
+        const resp = await fetch('/api/super/plans', { headers: authHeaders() });
+        if (handleAuthError(resp)) return;
+        if (!resp.ok) {
+            renderPlansPlaceholder();
+            return;
+        }
+        const plans = await resp.json();
+        if (!plans || !plans.length) { renderPlansPlaceholder(); return; }
+        renderPlans(plans);
+    } catch (e) {
+        renderPlansPlaceholder();
+    }
+}
+
+function renderPlans(plans) {
+    const rows = plans.map(p => {
+        const price = p.price_cents != null
+            ? (p.price_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + '/m&#234;s'
+            : '—';
+        return '<tr>' +
+            '<td>' + (p.name || '—') + '</td>' +
+            '<td>' + price + '</td>' +
+            '<td>' + (p.monthly_limit != null ? p.monthly_limit : 'Ilimitado') + '</td>' +
+            '<td><code style="font-size:.75rem;color:#888">' + (p.stripe_price_id || '—') + '</code></td>' +
+            '<td><span class="badge-pill ' + (p.active ? 'badge-active' : 'badge-canceled') + '">' + (p.active ? 'Ativo' : 'Inativo') + '</span></td>' +
+        '</tr>';
+    }).join('');
+    document.getElementById('plansTableBody').innerHTML = rows;
+}
+
+function renderPlansPlaceholder() {
+    // Fallback: show hardcoded plans
+    const plans = [
+        { name: 'Free', price_cents: 0, monthly_limit: 50, stripe_price_id: '', active: true },
+        { name: 'Starter', price_cents: 29700, monthly_limit: 300, stripe_price_id: '', active: true },
+        { name: 'Pro', price_cents: 69700, monthly_limit: 1500, stripe_price_id: '', active: true },
+        { name: 'Enterprise', price_cents: 199700, monthly_limit: null, stripe_price_id: '', active: true },
+    ];
+    renderPlans(plans);
+}
+
+// ── Toast ──
+function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('visible');
+    setTimeout(() => t.classList.remove('visible'), 3000);
+}
+</script>
+</body>
+</html>

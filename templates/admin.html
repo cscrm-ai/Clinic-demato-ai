@@ -58,6 +58,17 @@ body {
 }
 .login-card .btn-login:hover { background: #2A2320; }
 .login-error { color: #E74C3C; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+.magic-link-sent {
+    display: none;
+    background: #F0FDF4;
+    border: 1px solid #86EFAC;
+    border-radius: 0.5rem;
+    padding: 0.875rem 1rem;
+    font-size: 0.88rem;
+    color: #166534;
+    margin-top: 0.75rem;
+    line-height: 1.5;
+}
 
 /* ── Dashboard ── */
 .dashboard { display: none; }
@@ -109,6 +120,23 @@ body {
     font-size: 0.8rem;
     cursor: pointer;
     font-family: inherit;
+}
+
+/* ── Past Due Banner ── */
+.banner-past-due {
+    display: none;
+    background: #FEF2F2;
+    border-bottom: 2px solid #FECACA;
+    color: #B91C1C;
+    padding: 0.75rem 2rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: center;
+}
+.banner-past-due a {
+    color: #B91C1C;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .content {
@@ -461,6 +489,228 @@ body {
     font-size: .85rem;
 }
 
+/* ── Financeiro ── */
+.plan-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: .2rem .65rem;
+    border-radius: 9999px;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.plan-badge.trialing { background: #DBEAFE; color: #1D4ED8; }
+.plan-badge.active { background: #DCFCE7; color: #166534; }
+.plan-badge.past_due { background: #FEF2F2; color: #B91C1C; }
+.plan-badge.canceled { background: #F3F4F6; color: #6B7280; }
+
+.billing-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+.billing-plan-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #3A3330;
+}
+.usage-bar-wrap {
+    margin-bottom: 1rem;
+}
+.usage-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: .78rem;
+    color: #888;
+    margin-bottom: .35rem;
+}
+.usage-bar {
+    height: 8px;
+    background: #F0F0F0;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+.usage-bar-fill {
+    height: 100%;
+    background: #D99C94;
+    border-radius: 9999px;
+    transition: width .4s ease;
+}
+.billing-meta {
+    font-size: .82rem;
+    color: #888;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+.billing-meta span { display: flex; gap: .4rem; }
+.billing-actions {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+.btn-billing {
+    padding: .5rem 1.1rem;
+    border-radius: .5rem;
+    font-size: .83rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    border: none;
+    transition: filter .2s;
+}
+.btn-billing-primary {
+    background: #3A3330;
+    color: #fff;
+}
+.btn-billing-primary:hover { filter: brightness(1.15); }
+.btn-billing-secondary {
+    background: #F0EBE3;
+    color: #3A3330;
+}
+.btn-billing-secondary:hover { background: #E5DDD5; }
+
+.invoices-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .82rem;
+}
+.invoices-table th {
+    text-align: left;
+    font-size: .7rem;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: .4rem .5rem;
+    border-bottom: 1px solid #F0F0F0;
+}
+.invoices-table td {
+    padding: .55rem .5rem;
+    border-bottom: 1px solid #F8F8F8;
+    color: #3A3330;
+}
+.invoices-table tr:last-child td { border-bottom: none; }
+.invoices-table a {
+    color: #D99C94;
+    text-decoration: none;
+    font-size: .78rem;
+}
+.invoices-table a:hover { text-decoration: underline; }
+.inv-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: .1rem .5rem;
+    border-radius: 9999px;
+    font-size: .68rem;
+    font-weight: 700;
+}
+.inv-badge.paid { background: #DCFCE7; color: #166534; }
+.inv-badge.open { background: #FEF9C3; color: #854D0E; }
+.inv-badge.void { background: #F3F4F6; color: #6B7280; }
+.inv-badge.uncollectible { background: #FEF2F2; color: #B91C1C; }
+.invoices-empty {
+    text-align: center;
+    padding: 1.25rem;
+    color: #CCC;
+    font-size: .82rem;
+}
+
+/* ── Upgrade Modal ── */
+.upgrade-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+.upgrade-modal.open { display: flex; }
+.upgrade-modal-inner {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 2rem;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+.upgrade-modal-inner h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+.btn-modal-close {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: #999;
+    line-height: 1;
+}
+.plan-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+}
+.plan-card {
+    border: 1.5px solid #E8E8E8;
+    border-radius: .75rem;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    transition: border-color .2s;
+}
+.plan-card:hover { border-color: #D99C94; }
+.plan-card-name {
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #888;
+    margin-bottom: .5rem;
+}
+.plan-card-price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #3A3330;
+    margin-bottom: .25rem;
+}
+.plan-card-price span {
+    font-size: .8rem;
+    font-weight: 400;
+    color: #999;
+}
+.plan-card-analyses {
+    font-size: .8rem;
+    color: #888;
+    margin-bottom: 1rem;
+}
+.btn-plan-select {
+    width: 100%;
+    padding: .55rem;
+    background: #3A3330;
+    color: #fff;
+    border: none;
+    border-radius: .5rem;
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+.btn-plan-select:hover { background: #2A2320; }
+
 /* Toast */
 .toast {
     position: fixed;
@@ -474,7 +724,7 @@ body {
     font-size: 0.9rem;
     font-weight: 500;
     transition: transform 0.3s;
-    z-index: 100;
+    z-index: 300;
 }
 .toast.visible { transform: translateX(-50%) translateY(0); }
 </style>
@@ -485,11 +735,17 @@ body {
 <div class="login-screen" id="loginScreen">
     <div class="login-card">
         <h1>Painel Admin</h1>
-        <p>Digite a senha para personalizar sua clínica</p>
-        <input type="password" id="passwordInput" placeholder="Senha" autofocus>
-        <button class="btn-login" id="btnLogin">Entrar</button>
-        <div class="login-error" id="loginError">Senha incorreta</div>
+        <p>Digite seu e-mail para acessar o painel</p>
+        <input type="email" id="emailInput" placeholder="seu@email.com" autofocus>
+        <button class="btn-login" id="btnLogin">Enviar Magic Link</button>
+        <div class="login-error" id="loginError">Erro ao enviar o link. Verifique o e-mail.</div>
+        <div class="magic-link-sent" id="magicLinkSent"></div>
     </div>
+</div>
+
+<!-- PAST DUE BANNER -->
+<div class="banner-past-due" id="bannerPastDue">
+    &#9888;&#65039; Pagamento em atraso — <a onclick="openBillingPortal()">acesse o portal para regularizar</a>
 </div>
 
 <!-- DASHBOARD -->
@@ -607,6 +863,31 @@ body {
             </div>
         </div>
 
+        <!-- Financeiro -->
+        <div class="card" id="billingCard">
+            <h2>Financeiro &amp; Assinatura</h2>
+            <div class="billing-card-header">
+                <span class="billing-plan-name" id="billingPlanName">—</span>
+                <span class="plan-badge" id="billingStatusBadge"></span>
+            </div>
+            <div class="usage-bar-wrap">
+                <div class="usage-bar-label">
+                    <span>Análises este mês</span>
+                    <span id="billingUsageLabel">— / —</span>
+                </div>
+                <div class="usage-bar">
+                    <div class="usage-bar-fill" id="billingUsageFill" style="width:0%"></div>
+                </div>
+            </div>
+            <div class="billing-meta" id="billingMeta"></div>
+            <div class="billing-actions">
+                <button class="btn-billing btn-billing-primary" onclick="openBillingPortal()">Gerenciar Assinatura</button>
+                <button class="btn-billing btn-billing-secondary" onclick="openUpgradeModal()">Ver Planos / Upgrade</button>
+            </div>
+            <div style="font-size:.78rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem">Faturas</div>
+            <div id="invoicesContainer"><div class="invoices-empty">Carregando faturas...</div></div>
+        </div>
+
         <!-- Histórico de Análises -->
         <div class="card">
             <h2>Histórico de Análises</h2>
@@ -632,7 +913,7 @@ body {
         <!-- Vídeos dos Procedimentos -->
         <div class="card">
             <h2>Vídeos dos Procedimentos</h2>
-            <p style="font-size:.85rem;color:#888;margin-bottom:1rem">Vincule um vídeo (YouTube ou outro link) a cada procedimento. O botão "▶ Assistir" aparecerá automaticamente no laudo quando o procedimento for sugerido.</p>
+            <p style="font-size:.85rem;color:#888;margin-bottom:1rem">Vincule um vídeo (YouTube ou outro link) a cada procedimento. O botão "&#9654; Assistir" aparecerá automaticamente no laudo quando o procedimento for sugerido.</p>
             <div class="video-header">
                 <span>Nome do Procedimento</span>
                 <span>URL do Vídeo</span>
@@ -645,32 +926,98 @@ body {
     </div>
 </div>
 
+<!-- UPGRADE MODAL -->
+<div class="upgrade-modal" id="upgradeModal">
+    <div class="upgrade-modal-inner">
+        <button class="btn-modal-close" onclick="closeUpgradeModal()">&#x2715;</button>
+        <h2>Escolha seu Plano</h2>
+        <div class="plan-cards">
+            <div class="plan-card">
+                <div class="plan-card-name">Starter</div>
+                <div class="plan-card-price">R$297<span>/mês</span></div>
+                <div class="plan-card-analyses">300 análises/mês</div>
+                <button class="btn-plan-select" onclick="selectPlan('starter')">Entre em contato</button>
+            </div>
+            <div class="plan-card">
+                <div class="plan-card-name">Pro</div>
+                <div class="plan-card-price">R$697<span>/mês</span></div>
+                <div class="plan-card-analyses">1.500 análises/mês</div>
+                <button class="btn-plan-select" onclick="selectPlan('pro')">Entre em contato</button>
+            </div>
+            <div class="plan-card">
+                <div class="plan-card-name">Enterprise</div>
+                <div class="plan-card-price">R$1.997<span>/mês</span></div>
+                <div class="plan-card-analyses">Ilimitado</div>
+                <button class="btn-plan-select" onclick="selectPlan('enterprise')">Entre em contato</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-let adminPassword = '';
 let config = {};
 let fontOptions = [];
 
-// ── Login ──
+// ── Cookie helpers ──
+function setCookie(name, value, days) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+}
+function getCookie(name) {
+    return document.cookie.split('; ').reduce((acc, c) => {
+        const [k, v] = c.split('=');
+        return k === name ? decodeURIComponent(v) : acc;
+    }, '');
+}
+function deleteCookie(name) {
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+}
+function getToken() {
+    return getCookie('sb-access-token');
+}
+
+// ── Page load: check magic link token in URL hash ──
+(function checkMagicLink() {
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token=')) {
+        const params = new URLSearchParams(hash.replace(/^#/, ''));
+        const token = params.get('access_token');
+        if (token) {
+            setCookie('sb-access-token', token, 7);
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+            showDashboard();
+            return;
+        }
+    }
+    if (getToken()) {
+        showDashboard();
+    }
+})();
+
+// ── Login: magic link ──
 document.getElementById('btnLogin').addEventListener('click', doLogin);
-document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+document.getElementById('emailInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doLogin();
 });
 
 async function doLogin() {
-    const pw = document.getElementById('passwordInput').value;
+    const email = document.getElementById('emailInput').value.trim();
+    if (!email) return;
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('magicLinkSent').style.display = 'none';
+
     try {
-        const resp = await fetch('/api/admin/login', {
+        const resp = await fetch('/api/auth/magic-link', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: pw }),
+            body: JSON.stringify({ email }),
         });
         if (resp.ok) {
-            adminPassword = pw;
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('dashboard').classList.add('active');
-            loadConfig();
+            document.getElementById('magicLinkSent').textContent =
+                'Magic link enviado para ' + email + '. Verifique sua caixa de entrada.';
+            document.getElementById('magicLinkSent').style.display = 'block';
         } else {
             document.getElementById('loginError').style.display = 'block';
         }
@@ -679,11 +1026,36 @@ async function doLogin() {
     }
 }
 
+function showDashboard() {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('dashboard').classList.add('active');
+    loadConfig();
+    loadBilling();
+}
+
+// ── Auth helper for fetch ──
+function authHeaders(extra) {
+    return Object.assign({ 'Authorization': 'Bearer ' + getToken() }, extra || {});
+}
+
+// ── Handle 401/403 ──
+function handleAuthError(resp) {
+    if (resp.status === 401 || resp.status === 403) {
+        deleteCookie('sb-access-token');
+        document.getElementById('dashboard').classList.remove('active');
+        document.getElementById('bannerPastDue').style.display = 'none';
+        document.getElementById('loginScreen').classList.remove('hidden');
+        return true;
+    }
+    return false;
+}
+
 // ── Load Config ──
 async function loadConfig() {
     const resp = await fetch('/api/admin/config', {
-        headers: { 'X-Admin-Password': adminPassword },
+        headers: authHeaders(),
     });
+    if (handleAuthError(resp)) return;
     config = await resp.json();
     fontOptions = config._font_options || [];
     populateForm();
@@ -715,18 +1087,13 @@ function populateForm() {
 
     document.getElementById('cfgDisclaimer').value = config.disclaimer || '';
 
-    // Procedures catalog
     renderProcs();
-
-    // Videos
     renderVideos();
 
-    // Logo
     if (config.logo_url) {
         document.getElementById('logoPreview').innerHTML = '<img src="' + config.logo_url + '">';
     }
 
-    // Stats
     document.getElementById('statAnalyses').textContent = config.analyses_count || 0;
 }
 
@@ -751,7 +1118,7 @@ document.getElementById('logoInput').addEventListener('change', async (e) => {
     try {
         const resp = await fetch('/api/admin/logo', {
             method: 'POST',
-            headers: { 'X-Admin-Password': adminPassword },
+            headers: authHeaders(),
             body: form,
         });
         const result = await resp.json();
@@ -760,7 +1127,6 @@ document.getElementById('logoInput').addEventListener('change', async (e) => {
             document.getElementById('logoPreview').innerHTML = '<img src="' + result.logo_url + '">';
             toast('Logo atualizado!');
         } else {
-            // Preview local
             const reader = new FileReader();
             reader.onload = (ev) => {
                 document.getElementById('logoPreview').innerHTML = '<img src="' + ev.target.result + '">';
@@ -809,12 +1175,10 @@ async function saveConfig() {
     try {
         const resp = await fetch('/api/admin/config', {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Admin-Password': adminPassword,
-            },
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(data),
         });
+        if (handleAuthError(resp)) return;
         if (resp.ok) {
             config = data;
             toast('Configurações salvas!');
@@ -832,21 +1196,143 @@ document.getElementById('btnPreview').addEventListener('click', () => {
 });
 
 // ── Logout ──
-document.getElementById('btnLogout').addEventListener('click', () => {
-    adminPassword = '';
+document.getElementById('btnLogout').addEventListener('click', async () => {
+    try {
+        await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: authHeaders(),
+        });
+    } catch (_) {}
+    deleteCookie('sb-access-token');
     config = {};
+    document.getElementById('bannerPastDue').style.display = 'none';
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('dashboard').classList.remove('active');
-    document.getElementById('passwordInput').value = '';
+    document.getElementById('emailInput').value = '';
     document.getElementById('loginError').style.display = 'none';
+    document.getElementById('magicLinkSent').style.display = 'none';
 });
+
+// ── Billing ──
+async function loadBilling() {
+    try {
+        const resp = await fetch('/api/admin/billing', {
+            headers: authHeaders(),
+        });
+        if (handleAuthError(resp)) return;
+        if (!resp.ok) return;
+        const data = await resp.json();
+        renderBilling(data);
+    } catch (e) {
+        // silently fail — billing section will stay in loading state
+    }
+}
+
+function renderBilling(data) {
+    const status = data.subscription_status || 'canceled';
+
+    // Past due banner
+    if (status === 'past_due') {
+        document.getElementById('bannerPastDue').style.display = 'block';
+    }
+
+    // Plan name
+    document.getElementById('billingPlanName').textContent = data.plan_name || 'Sem plano';
+
+    // Status badge
+    const badge = document.getElementById('billingStatusBadge');
+    const statusLabels = { trialing: 'Em trial', active: 'Ativo', past_due: 'Em atraso', canceled: 'Cancelado' };
+    badge.textContent = statusLabels[status] || status;
+    badge.className = 'plan-badge ' + status;
+
+    // Usage bar
+    const used = data.analyses_this_month || 0;
+    const limit = data.monthly_limit;
+    const usageLabel = document.getElementById('billingUsageLabel');
+    const fill = document.getElementById('billingUsageFill');
+    if (limit === null || limit === undefined) {
+        usageLabel.textContent = used + ' / Ilimitado';
+        fill.style.width = '0%';
+    } else {
+        usageLabel.textContent = used + ' / ' + limit;
+        fill.style.width = Math.min(100, Math.round((used / limit) * 100)) + '%';
+    }
+
+    // Meta
+    const meta = document.getElementById('billingMeta');
+    const parts = [];
+    if (data.current_period_end) {
+        const d = new Date(data.current_period_end);
+        parts.push('<span>Próxima cobrança: <strong>' + d.toLocaleDateString('pt-BR') + '</strong></span>');
+    }
+    if (status === 'trialing' && data.trial_end) {
+        const d = new Date(data.trial_end);
+        parts.push('<span>Trial termina em: <strong>' + d.toLocaleDateString('pt-BR') + '</strong></span>');
+    }
+    meta.innerHTML = parts.join('');
+
+    // Invoices
+    renderInvoices(data.invoices || []);
+}
+
+function renderInvoices(invoices) {
+    const container = document.getElementById('invoicesContainer');
+    if (!invoices.length) {
+        container.innerHTML = '<div class="invoices-empty">Nenhuma fatura encontrada.</div>';
+        return;
+    }
+    const rows = invoices.map(inv => {
+        const date = new Date(inv.date * 1000).toLocaleDateString('pt-BR');
+        const amount = (inv.amount_paid / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const statusClass = inv.status === 'paid' ? 'paid' : inv.status === 'open' ? 'open' : inv.status === 'void' ? 'void' : 'uncollectible';
+        const statusLabel = { paid: 'Pago', open: 'Em aberto', void: 'Cancelado', uncollectible: 'Inadimplente' }[inv.status] || inv.status;
+        const links = [];
+        if (inv.invoice_pdf) links.push('<a href="' + inv.invoice_pdf + '" target="_blank">PDF</a>');
+        if (inv.hosted_invoice_url) links.push('<a href="' + inv.hosted_invoice_url + '" target="_blank">Ver</a>');
+        return '<tr><td>' + date + '</td><td>' + amount + '</td><td><span class="inv-badge ' + statusClass + '">' + statusLabel + '</span></td><td>' + links.join(' &middot; ') + '</td></tr>';
+    }).join('');
+    container.innerHTML = '<table class="invoices-table"><thead><tr><th>Data</th><th>Valor</th><th>Status</th><th>Links</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+async function openBillingPortal() {
+    try {
+        const resp = await fetch('/api/admin/billing/portal', {
+            method: 'POST',
+            headers: authHeaders(),
+        });
+        if (handleAuthError(resp)) return;
+        const data = await resp.json();
+        if (data.portal_url) {
+            window.location.href = data.portal_url;
+        } else {
+            toast('Erro ao abrir portal de assinatura');
+        }
+    } catch (e) {
+        toast('Erro de conexão');
+    }
+}
+
+function openUpgradeModal() {
+    document.getElementById('upgradeModal').classList.add('open');
+}
+function closeUpgradeModal() {
+    document.getElementById('upgradeModal').classList.remove('open');
+}
+document.getElementById('upgradeModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('upgradeModal')) closeUpgradeModal();
+});
+
+function selectPlan(planId) {
+    toast('Entre em contato com o suporte para assinar o plano ' + planId + '.');
+}
 
 // ── Histórico de Análises ──
 async function loadAnalyses() {
     try {
         const resp = await fetch('/api/admin/analyses', {
-            headers: { 'X-Admin-Password': adminPassword },
+            headers: authHeaders(),
         });
+        if (handleAuthError(resp)) return;
         const records = await resp.json();
         renderAnalyses(records);
     } catch (e) {
@@ -863,7 +1349,7 @@ function renderAnalyses(records) {
     }
     container.innerHTML = '<div class="analyses-grid">' +
         records.map(r => {
-            const dt = new Date(r.timestamp);
+            const dt = new Date(r.created_at);
             const dateStr = dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             const markers = (r.findings || []).map((f, i) =>
                 (f.x_point > 0 || f.y_point > 0)
@@ -878,10 +1364,13 @@ function renderAnalyses(records) {
                         : '') +
                 '</div>'
             ).join('');
+            const imgHtml = r.image_url
+                ? '<img src="' + r.image_url + '" alt="Análise">'
+                : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#CCC;font-size:.7rem">Sem imagem</div>';
             return '<div class="analysis-card" id="acard-' + r.id + '">' +
                 '<div class="analysis-card-top">' +
                     '<div class="analysis-img-wrap">' +
-                        (r.image_b64 ? '<img src="data:image/jpeg;base64,' + r.image_b64 + '" alt="Análise">' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#CCC;font-size:.7rem">Sem imagem</div>') +
+                        imgHtml +
                         markers +
                     '</div>' +
                     '<div class="analysis-info">' +
@@ -894,7 +1383,7 @@ function renderAnalyses(records) {
                     '</div>' +
                 '</div>' +
                 '<div class="analysis-card-actions">' +
-                    '<button class="btn-del-analysis" onclick="deleteAnalysis(\'' + r.id + '\')">🗑 Excluir</button>' +
+                    '<button class="btn-del-analysis" onclick="deleteAnalysis(\'' + r.id + '\')">&#128465; Excluir</button>' +
                 '</div>' +
             '</div>';
         }).join('') +
@@ -905,7 +1394,7 @@ async function deleteAnalysis(id) {
     if (!confirm('Excluir esta análise?')) return;
     await fetch('/api/admin/analyses/' + id, {
         method: 'DELETE',
-        headers: { 'X-Admin-Password': adminPassword },
+        headers: authHeaders(),
     });
     document.getElementById('acard-' + id)?.remove();
     const grid = document.querySelector('.analyses-grid');
@@ -930,7 +1419,7 @@ function renderProcs() {
             '<select class="proc-tipo">' +
                 tipos.map(t => '<option value="' + t + '"' + (p.tipo === t ? ' selected' : '') + '>' + t + '</option>').join('') +
             '</select>' +
-            '<button class="btn-remove-video" onclick="removeProc(' + i + ')" aria-label="Remover">✕</button>' +
+            '<button class="btn-remove-video" onclick="removeProc(' + i + ')" aria-label="Remover">&#x2715;</button>' +
         '</div>'
     ).join('');
 }
@@ -961,7 +1450,7 @@ function renderVideos() {
         '<div class="video-entry">' +
             '<input class="video-proc" placeholder="Ex: Toxina Botulínica" value="' + (v.procedure || '').replace(/"/g, '&quot;') + '">' +
             '<input class="video-url" placeholder="https://youtube.com/..." value="' + (v.url || '').replace(/"/g, '&quot;') + '">' +
-            '<button class="btn-remove-video" onclick="removeVideo(' + i + ')" aria-label="Remover">✕</button>' +
+            '<button class="btn-remove-video" onclick="removeVideo(' + i + ')" aria-label="Remover">&#x2715;</button>' +
         '</div>'
     ).join('');
 }
@@ -970,7 +1459,6 @@ function addVideo() {
     if (!config.videos) config.videos = [];
     config.videos.push({ procedure: '', url: '' });
     renderVideos();
-    // Foca no último input de procedimento
     const inputs = document.querySelectorAll('.video-proc');
     if (inputs.length) inputs[inputs.length - 1].focus();
 }

@@ -5,6 +5,7 @@ esteticos usando Gemini (analise visual) + Moondream3 via FAL AI (coordenadas).
 """
 
 import sys
+import time as _time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from agno.models.google import Gemini
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from tools.cost_tracker import CostAccumulator
 from tools.fal_points import get_moondream_points
 from tools.models import SkinAnalysisReport
 
@@ -245,8 +247,18 @@ Sugira rotina personalizada com base nos achados, incluindo:
 - Foque em PROCEDIMENTOS ESTETICOS, nao em produtos comerciais"""
 
 
-def analyze_image(img_path: str, procedures_catalog: list = None) -> SkinAnalysisReport:
-    """Analisa uma imagem de pele e retorna o laudo estruturado."""
+def analyze_image(
+    img_path: str,
+    procedures_catalog: list = None,
+    cost_tracker: CostAccumulator | None = None,
+) -> SkinAnalysisReport:
+    """Analisa uma imagem de pele e retorna o laudo estruturado.
+
+    Se cost_tracker for passado, os custos de Gemini e Moondream são
+    acumulados nele. Caso contrário, um tracker descartável é criado
+    apenas para manter a lógica interna consistente.
+    """
+    tracker = cost_tracker or CostAccumulator()
 
     agent = Agent(
         name="dra_sync_clinic",
@@ -291,8 +303,25 @@ Remember:
 - Include AM and PM skincare routines
 - Focus on aesthetic procedures, NOT commercial products""" + catalog_block
 
+    _t_gemini_start = _time.time()
     response = agent.run(user_prompt, images=[Image(filepath=img_path)])
+    _t_gemini_ms = int((_time.time() - _t_gemini_start) * 1000)
     report = response.content
+
+    # Instrumentação de custo Gemini — extrai usage_metadata se disponível
+    try:
+        usage = getattr(response, "usage_metadata", None) or getattr(response, "metrics", None)
+        tokens_in  = getattr(usage, "prompt_token_count",     0) or getattr(usage, "input_tokens",  0) or 0
+        tokens_out = getattr(usage, "candidates_token_count", 0) or getattr(usage, "output_tokens", 0) or 0
+        tracker.add_gemini(
+            tokens_in=int(tokens_in),
+            tokens_out=int(tokens_out),
+            operation="generate_report",
+            latency_ms=_t_gemini_ms,
+        )
+        print(f"[COST] Gemini: {tokens_in} in / {tokens_out} out — {_t_gemini_ms}ms")
+    except Exception as _cost_exc:
+        print(f"[COST] Não foi possível extrair tokens Gemini: {_cost_exc}")
 
     # Parsing defensivo: alguns modelos retornam string JSON em vez do objeto Pydantic
     if isinstance(report, str):
@@ -311,7 +340,6 @@ Remember:
             )
 
     from statistics import median as _median
-    import time as _time
 
     t0 = _time.time()
     print(f"\n[DRA. SYNC] Gerou {len(report.findings)} achados. Buscando coordenadas em paralelo...\n")
@@ -342,7 +370,17 @@ Remember:
                 results_map[(i, j)] = {"x": 0, "y": 0}
 
     t_moondream = _time.time() - t0
+    t_moondream_ms = int(t_moondream * 1000)
     print(f"  Moondream concluído em {t_moondream:.1f}s\n")
+
+    # Instrumentação de custo Moondream — total de calls do lote principal
+    if all_tasks:
+        tracker.add_moondream(
+            calls=len(all_tasks),
+            operation="locate_finding",
+            latency_ms=t_moondream_ms,
+        )
+        print(f"[COST] Moondream: {len(all_tasks)} calls — {t_moondream_ms}ms")
 
     # ── Processar resultados por finding ──
     for i, finding in enumerate(report.findings):
@@ -363,7 +401,10 @@ Remember:
         if not valid_results:
             alt_q = _build_zone_fallback(finding.zone)
             print(f"  [FALLBACK] Tentando fallback por zona: '{alt_q}'")
+            _t_fb = _time.time()
             coords = get_moondream_points(img_path, alt_q)
+            _t_fb_ms = int((_time.time() - _t_fb) * 1000)
+            tracker.add_moondream(calls=1, operation="locate_finding_fallback", latency_ms=_t_fb_ms)
             if not (coords["x"] == 0 and coords["y"] == 0):
                 valid_results.append(coords)
                 print(f"  [FALLBACK] ✓ x={coords['x']:.3f}, y={coords['y']:.3f}")
