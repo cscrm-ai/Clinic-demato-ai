@@ -582,6 +582,7 @@ export default function AdminPage() {
                         <TableRow>
                           <TableHead>Nome</TableHead>
                           <TableHead className="w-32">Marca</TableHead>
+                          <TableHead className="w-44">Vídeo (YouTube)</TableHead>
                           <TableHead className="w-36">Tipo</TableHead>
                           <TableHead className="w-20 text-center">Ativo</TableHead>
                           {procs.some((p) => !p.padrao) && (
@@ -613,6 +614,18 @@ export default function AdminPage() {
                                 onChange={(e) => {
                                   const updated = [...procs];
                                   updated[i] = { ...p, marca: e.target.value };
+                                  setProcs(updated);
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={p.video || ""}
+                                placeholder="https://youtu.be/..."
+                                className="h-8 text-xs border-0 focus-visible:ring-1"
+                                onChange={(e) => {
+                                  const updated = [...procs];
+                                  updated[i] = { ...p, video: e.target.value };
                                   setProcs(updated);
                                 }}
                               />
