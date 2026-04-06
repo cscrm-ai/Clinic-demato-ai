@@ -89,15 +89,59 @@ export default function PatientPage() {
       });
   }, []);
 
-  function handleFile(file: File) {
+  /**
+   * When the front camera captures a selfie, the image is mirrored.
+   * We un-mirror it via canvas so the AI coordinates match the displayed photo.
+   */
+  function unmirrorIfNeeded(file: File): Promise<{ previewUrl: string; fileToSend: File }> {
+    const isFrontCamera = file.name.toLowerCase().includes("image") || (file as unknown as { fromCamera?: boolean }).fromCamera !== false;
+    // Always unmirror on capture="user" — mobile front camera is always mirrored
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d")!;
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const correctedFile = new File([blob], file.name, { type: "image/jpeg" });
+            const previewUrl = URL.createObjectURL(blob);
+            resolve({ previewUrl, fileToSend: correctedFile });
+          } else {
+            // Fallback: use original
+            resolve({ previewUrl: URL.createObjectURL(file), fileToSend: file });
+          }
+        }, "image/jpeg", 0.92);
+      };
+      img.onerror = () => {
+        resolve({ previewUrl: URL.createObjectURL(file), fileToSend: file });
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
       setError("Envie uma imagem (JPG, PNG, HEIC…)");
       return;
     }
     setError("");
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    analyzeImage(file);
+    // Check if file came from camera (capture="user") or from gallery
+    const input = fileRef.current;
+    const fromCamera = input?.hasAttribute("capture");
+    if (fromCamera) {
+      const { previewUrl, fileToSend } = await unmirrorIfNeeded(file);
+      setPreview(previewUrl);
+      analyzeImage(fileToSend);
+    } else {
+      const url = URL.createObjectURL(file);
+      setPreview(url);
+      analyzeImage(file);
+    }
   }
 
   function startStepTimer() {
@@ -367,14 +411,15 @@ export default function PatientPage() {
       style={{ background: "var(--color-background,#F0EBE3)", color: "var(--color-text,#3A3330)" }}
     >
       <div className="max-w-[480px] mx-auto px-5 py-6 space-y-5">
-        <div className="flex items-center justify-between">
+        {/* Header */}
+        <div className="text-center space-y-1">
           {logoUrl
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={logoUrl} alt={clinicName} className="h-8 object-contain" />
-            : <span className="font-bold">{clinicName}</span>}
-          <button onClick={reset} className="text-xs opacity-60 hover:opacity-100 underline">
-            Nova análise
-          </button>
+            ? <img src={logoUrl} alt={clinicName} className="h-10 object-contain mx-auto" />
+            : <h1 className="text-xl font-bold">{clinicName}</h1>}
+          <p className="text-[11px] opacity-50 leading-snug max-w-[320px] mx-auto">
+            Análise feita por inteligência artificial. Não substitui a avaliação de um médico dermatologista.
+          </p>
         </div>
 
         {/* Face map with markers */}
@@ -415,15 +460,20 @@ export default function PatientPage() {
           </div>
         )}
 
-        {/* Badges */}
-        <div className="flex gap-2 justify-center flex-wrap">
-          <Badge variant="secondary" className="text-xs" style={{ background: "rgba(217,156,148,0.12)", color: "var(--color-primary,#D9BFB2)" }}>
-            Fototipo {report.fitzpatrick_type}
-          </Badge>
-          <Badge variant="secondary" className="text-xs" style={{ background: "rgba(217,156,148,0.12)", color: "var(--color-primary,#D9BFB2)" }}>
-            {report.skin_type}
-          </Badge>
-        </div>
+        {/* Skin type + fitzpatrick */}
+        <Card className="border-0 shadow-sm bg-white/70">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Badge className="text-xs font-mono font-bold shrink-0" style={{ background: "var(--color-accent,#D99C94)", color: "#fff" }}>
+                FOTOTIPO {report.fitzpatrick_type}
+              </Badge>
+              <button onClick={reset} className="ml-auto text-xs opacity-50 hover:opacity-100 underline">
+                Nova análise
+              </button>
+            </div>
+            <p className="text-sm leading-relaxed opacity-80">{report.skin_type}</p>
+          </CardContent>
+        </Card>
 
         {/* ── Findings ── */}
         {report.findings?.length > 0 && (
