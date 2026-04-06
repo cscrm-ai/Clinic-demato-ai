@@ -413,7 +413,31 @@ export default function SuperAdminPage() {
                               : (c.usage_this_month ?? 0)}
                           </TableCell>
                           <TableCell>
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 flex-wrap">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => {
+                                  const url = `https://${c.subdomain}.allbele.app`;
+                                  navigator.clipboard.writeText(url);
+                                  alert(`Link copiado: ${url}`);
+                                }}
+                              >
+                                📋 Paciente
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => {
+                                  const url = `https://${c.subdomain}.allbele.app/admin`;
+                                  navigator.clipboard.writeText(url);
+                                  alert(`Link copiado: ${url}`);
+                                }}
+                              >
+                                📋 Admin
+                              </Button>
                               {c.status === "active" ? (
                                 <Button
                                   variant="outline"
