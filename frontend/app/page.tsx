@@ -1,4 +1,5 @@
 "use client";
+/* v2 — selfie mirror fix */
 
 import { useEffect, useRef, useState } from "react";
 import { applyBranding, type ClinicConfig } from "@/lib/api";
