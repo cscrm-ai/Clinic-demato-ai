@@ -99,6 +99,9 @@ export default function SuperAdminPage() {
   const [newLoading, setNewLoading] = useState(false);
   const [newMsg, setNewMsg] = useState({ text: "", ok: false });
 
+  // Active tab
+  const [activeTab, setActiveTab] = useState("dashboard");
+
   // Filters
   const [clinicFilter, setClinicFilter] = useState("all");
   const [clinicSearch, setClinicSearch] = useState("");
@@ -275,12 +278,16 @@ export default function SuperAdminPage() {
             <button
               key={tab}
               onClick={() => {
-                document.querySelector(`[data-tab="${tab}"]`)?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+                setActiveTab(tab);
                 if (tab === "uso") loadUsage();
                 if (tab === "financeiro") loadInvoices();
                 if (tab === "planos") loadPlans();
               }}
-              className="w-full text-left px-5 py-2.5 text-sm text-[#3A3330] hover:bg-[#F5F0EB] transition-colors"
+              className={`w-full text-left px-5 py-2.5 text-sm transition-colors ${
+                activeTab === tab
+                  ? "bg-[#F5F0EB] font-semibold text-[#3A3330]"
+                  : "text-[#3A3330] hover:bg-[#F5F0EB]"
+              }`}
             >
               {label}
             </button>
@@ -295,10 +302,10 @@ export default function SuperAdminPage() {
 
       {/* Main */}
       <main className="ml-56 flex-1 p-8">
-        <Tabs defaultValue="dashboard">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="hidden">
             {["dashboard", "clinicas", "uso", "financeiro", "planos"].map((t) => (
-              <TabsTrigger key={t} value={t} data-tab={t} />
+              <TabsTrigger key={t} value={t} />
             ))}
           </TabsList>
 
