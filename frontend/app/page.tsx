@@ -55,7 +55,7 @@ export default function PatientPage() {
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [showPopup, setShowPopup] = useState(true);
+  const [showPopup, setShowPopup] = useState(false);
   const [stepTitle, setStepTitle] = useState(ANALYSIS_STEPS[0].title);
   const [stepDetail, setStepDetail] = useState(ANALYSIS_STEPS[0].detail);
   const [elapsed, setElapsed] = useState(0);
@@ -71,8 +71,13 @@ export default function PatientPage() {
           "--font-main",
           `'${cfg.font}', system-ui, sans-serif`
         );
+        // Only show popup after branding + clinic name are ready
+        setShowPopup(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        // Show popup even if config fails (fallback styles)
+        setShowPopup(true);
+      });
   }, []);
 
   function handleFile(file: File) {
