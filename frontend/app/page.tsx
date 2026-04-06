@@ -75,7 +75,7 @@ export default function PatientPage() {
   async function analyzeImage(file: File) {
     setScreen("analyzing");
     const form = new FormData();
-    form.append("file", file);
+    form.append("image", file);
     try {
       const resp = await fetch("/analyze", { method: "POST", body: form });
       if (resp.status === 402) {
