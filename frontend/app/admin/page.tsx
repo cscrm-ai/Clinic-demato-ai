@@ -23,11 +23,35 @@ interface BillingStatus {
 }
 
 // ─── Analysis record ─────────────────────────────────────────────────────────
+interface AnalysisFinding {
+  description: string;
+  zone?: string;
+  priority?: string;
+  conduta?: string;
+  clinical_note?: string;
+  x_point?: number;
+  y_point?: number;
+  procedimentos_indicados?: { nome: string; descricao_breve?: string; sessoes_estimadas?: string; horizonte?: string }[];
+}
+
+interface AnalysisReport {
+  skin_type?: string;
+  skin_score?: number;
+  fitzpatrick_type?: string;
+  findings?: AnalysisFinding[];
+  plano_terapeutico?: { curto_prazo?: string; medio_prazo?: string; longo_prazo?: string };
+  am_routine?: string;
+  pm_routine?: string;
+  general_observations?: string;
+}
+
 interface Analysis {
   id: string;
   created_at: string;
   skin_type?: string;
   fitzpatrick_type?: string;
+  image_url?: string;
+  report?: AnalysisReport;
 }
 import {
   getCookie,
@@ -123,6 +147,7 @@ export default function AdminPage() {
   const [billing, setBilling] = useState<BillingStatus | null>(null);
   // Analyses state
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
   // Upgrade modal
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -648,46 +673,151 @@ export default function AdminPage() {
             <TabsContent value="historico">
               <div className="max-w-4xl space-y-4">
                 <h1 className="text-2xl font-bold text-[#3A3330]">Histórico</h1>
-                <Card>
-                  <CardContent className="p-0">
-                    {analyses.length === 0 ? (
-                      <p className="p-6 text-sm text-muted-foreground">
-                        Nenhuma análise encontrada.
-                      </p>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Data</TableHead>
-                            <TableHead>Tipo de pele</TableHead>
-                            <TableHead>Fitzpatrick</TableHead>
-                            <TableHead className="w-16" />
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {analyses.map((a) => (
-                            <TableRow key={a.id}>
-                              <TableCell className="text-sm">
-                                {new Date(a.created_at).toLocaleString("pt-BR")}
-                              </TableCell>
-                              <TableCell className="text-sm">{a.skin_type || "—"}</TableCell>
-                              <TableCell className="text-sm">{a.fitzpatrick_type || "—"}</TableCell>
-                              <TableCell>
-                                <button
-                                  onClick={() => deleteAnalysis(a.id)}
-                                  className="text-xs text-muted-foreground hover:text-destructive"
-                                >
-                                  ✕
-                                </button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </CardContent>
-                </Card>
+                {analyses.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma análise encontrada.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {analyses.map((a) => {
+                      const r = a.report;
+                      const score = r?.skin_score;
+                      return (
+                        <Card
+                          key={a.id}
+                          className="cursor-pointer hover:shadow-md transition-shadow"
+                          onClick={() => setSelectedAnalysis(a)}
+                        >
+                          <CardContent className="flex items-center gap-4 py-3">
+                            {a.image_url && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={a.image_url} alt="" className="w-12 h-12 rounded-full object-cover shrink-0 border" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate">{a.skin_type || r?.skin_type || "—"}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(a.created_at).toLocaleString("pt-BR")} · Fototipo {a.fitzpatrick_type || r?.fitzpatrick_type || "—"}
+                                {typeof score === "number" && ` · Score ${score}/100`}
+                              </p>
+                            </div>
+                            <Badge variant="outline" className="text-xs shrink-0">
+                              {r?.findings?.length ?? 0} achados
+                            </Badge>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); deleteAnalysis(a.id); }}
+                              className="text-xs text-muted-foreground hover:text-destructive shrink-0 ml-2"
+                            >
+                              ✕
+                            </button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+
+              {/* ── Analysis Detail Modal ── */}
+              <Dialog open={!!selectedAnalysis} onOpenChange={(open) => { if (!open) setSelectedAnalysis(null); }}>
+                <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      Análise de {new Date(selectedAnalysis?.created_at || "").toLocaleString("pt-BR")}
+                    </DialogTitle>
+                  </DialogHeader>
+                  {selectedAnalysis && (() => {
+                    const a = selectedAnalysis;
+                    const r = a.report;
+                    if (!r) return <p className="text-sm text-muted-foreground">Dados não disponíveis.</p>;
+                    const HORIZON: Record<string, string> = { CURTO_PRAZO: "Curto prazo", MEDIO_PRAZO: "Médio prazo", LONGO_PRAZO: "Longo prazo" };
+                    const PCOLOR: Record<string, string> = { PRIORITARIO: "bg-red-100 text-red-800", RECOMENDADO: "bg-yellow-100 text-yellow-800", OPCIONAL: "bg-green-100 text-green-800" };
+                    return (
+                      <div className="space-y-4">
+                        {/* Face map */}
+                        {a.image_url && r.findings?.length ? (
+                          <div className="relative w-full rounded-xl overflow-hidden">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={a.image_url} alt="Foto" className="w-full block" />
+                            {r.findings.map((f, i) => {
+                              const x = (f.x_point ?? 0) * 100;
+                              const y = (f.y_point ?? 0) * 100;
+                              if (x === 0 && y === 0) return null;
+                              return (
+                                <div key={i} className="absolute flex items-center justify-center rounded-full border-2 border-white text-white text-[0.6rem] font-bold shadow-md"
+                                  style={{
+                                    width: 22, height: 22, left: `${x}%`, top: `${y}%`,
+                                    transform: "translate(-50%,-50%)",
+                                    background: f.priority === "PRIORITARIO" ? "#E74C3C" : f.priority === "OPCIONAL" ? "#827870" : "#D99C94",
+                                  }}
+                                >{i + 1}</div>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+
+                        {/* Badges */}
+                        <div className="flex gap-2 flex-wrap">
+                          <Badge style={{ background: "#D99C94", color: "#fff" }}>FOTOTIPO {r.fitzpatrick_type}</Badge>
+                          {typeof r.skin_score === "number" && (
+                            <Badge style={{ background: r.skin_score >= 80 ? "#22c55e" : r.skin_score >= 60 ? "#eab308" : r.skin_score >= 40 ? "#f97316" : "#ef4444", color: "#fff" }}>
+                              SCORE {r.skin_score}/100
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm">{r.skin_type}</p>
+
+                        {/* Findings */}
+                        {r.findings?.map((f, i) => (
+                          <Card key={i} className="border-0 shadow-sm" style={{ borderLeft: `3px solid ${f.priority === "PRIORITARIO" ? "#E74C3C" : f.priority === "OPCIONAL" ? "#827870" : "#D99C94"}` }}>
+                            <CardContent className="pt-3 pb-2 space-y-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-mono font-bold" style={{ color: "#D99C94" }}>{i + 1}. {f.zone}</span>
+                                {f.priority && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${PCOLOR[f.priority] || ""}`}>{f.priority}</span>}
+                              </div>
+                              <p className="text-sm font-semibold">{f.description}</p>
+                              {f.conduta && <p className="text-xs opacity-70"><strong>Conduta:</strong> {f.conduta}</p>}
+                              {f.procedimentos_indicados?.map((p, j) => (
+                                <div key={j} className="flex gap-2 items-start text-xs">
+                                  <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: "#D99C94" }} />
+                                  <span><strong>{p.nome}</strong>{p.sessoes_estimadas ? ` · ${p.sessoes_estimadas}` : ""}{p.horizonte ? ` · ${HORIZON[p.horizonte] || p.horizonte}` : ""}</span>
+                                </div>
+                              ))}
+                              {f.clinical_note && <p className="text-[11px] italic opacity-50">{f.clinical_note}</p>}
+                            </CardContent>
+                          </Card>
+                        ))}
+
+                        {/* Plan */}
+                        {r.plano_terapeutico && (
+                          <div className="space-y-2">
+                            <h3 className="text-sm font-bold">Plano Terapêutico</h3>
+                            {[
+                              { l: "Curto prazo", t: r.plano_terapeutico.curto_prazo, c: "#E74C3C" },
+                              { l: "Médio prazo", t: r.plano_terapeutico.medio_prazo, c: "#D99C94" },
+                              { l: "Longo prazo", t: r.plano_terapeutico.longo_prazo, c: "#827870" },
+                            ].map(({ l, t, c }) => t ? <div key={l}><p className="text-xs font-bold" style={{ color: c }}>{l}</p><p className="text-xs opacity-80">{t}</p></div> : null)}
+                          </div>
+                        )}
+
+                        {/* Routines */}
+                        {(r.am_routine || r.pm_routine) && (
+                          <div className="space-y-2">
+                            <h3 className="text-sm font-bold">Rotina</h3>
+                            {r.am_routine && <div><p className="text-xs font-bold" style={{ color: "#D99C94" }}>Manhã</p><p className="text-xs opacity-75 whitespace-pre-line">{r.am_routine}</p></div>}
+                            {r.pm_routine && <div><p className="text-xs font-bold" style={{ color: "#D99C94" }}>Noite</p><p className="text-xs opacity-75 whitespace-pre-line">{r.pm_routine}</p></div>}
+                          </div>
+                        )}
+
+                        {/* Observations */}
+                        {r.general_observations && (
+                          <div>
+                            <h3 className="text-sm font-bold">Observações</h3>
+                            <p className="text-xs opacity-70 whitespace-pre-line">{r.general_observations}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             {/* ── Financeiro ── */}
