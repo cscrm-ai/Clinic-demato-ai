@@ -3,15 +3,18 @@
     {
       "src": "api.py",
       "use": "@vercel/python",
-      "config": {
-        "maxDuration": 300
-      }
+      "config": { "maxDuration": 300 }
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/next"
     }
   ],
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api.py"
-    }
+    { "src": "/api/(.*)",       "dest": "api.py" },
+    { "src": "/analyze",        "dest": "api.py" },
+    { "src": "/webhooks/(.*)",  "dest": "api.py" },
+    { "src": "/health",         "dest": "api.py" },
+    { "src": "/(.*)",           "dest": "frontend/$1" }
   ]
 }

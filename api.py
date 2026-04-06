@@ -24,7 +24,7 @@ for _key in ("FAL_KEY", "GOOGLE_API_KEY", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE
 
 from fastapi import Depends, FastAPI, File, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from agent_api.agent import analyze_image
 from auth.deps import get_current_user, require_clinic_admin, require_super_admin
@@ -107,30 +107,6 @@ app.add_middleware(
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _inject_config_into_html(html: str, config: dict) -> str:
-    """Injeta CSS variables e config JSON no HTML antes do </head>."""
-    import json as _json
-
-    colors = config.get("colors", DEFAULT_CONFIG["colors"])
-    font   = config.get("font", "Inter")
-
-    css_vars = f"""<style>
-:root {{
-    --color-primary:    {colors.get('primary',    '#D99C94')};
-    --color-secondary:  {colors.get('secondary',  '#827870')};
-    --color-accent:     {colors.get('accent',     '#C4A265')};
-    --color-background: {colors.get('background', '#FAF7F4')};
-    --color-text:       {colors.get('text',       '#3A3330')};
-    --font-main: '{font}', system-ui, sans-serif;
-}}
-</style>"""
-
-    config_script = f"""<script>
-window.__CLINIC_CONFIG__ = {_json.dumps(config, ensure_ascii=False)};
-</script>"""
-
-    return html.replace("</head>", f"{css_vars}\n{config_script}\n</head>")
-
 
 def _clinic_config(request: Request) -> dict:
     """Extrai config da clínica resolvida no middleware."""
@@ -145,17 +121,6 @@ def _clinic_config(request: Request) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════
 # ROTAS DO PACIENTE
 # ═══════════════════════════════════════════════════════════════════════════
-
-@app.get("/")
-async def index(request: Request):
-    """Tela do paciente — foto → laudo."""
-    config = _clinic_config(request)
-    html   = (BASE_DIR / "templates" / "index.html").read_text()
-    html   = _inject_config_into_html(html, config)
-    return HTMLResponse(
-        content=html,
-        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
-    )
 
 
 @app.post("/analyze")
@@ -288,25 +253,6 @@ async def get_config(request: Request):
 # ═══════════════════════════════════════════════════════════════════════════
 # ADMIN DA CLÍNICA
 # ═══════════════════════════════════════════════════════════════════════════
-
-@app.get("/admin")
-async def admin_page():
-    """Painel admin da clínica."""
-    html = (BASE_DIR / "templates" / "admin.html").read_text()
-    return HTMLResponse(
-        content=html,
-        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
-    )
-
-
-@app.get("/set-password")
-async def set_password_page():
-    """Página para o admin da clínica definir sua senha (vinda do e-mail de convite)."""
-    html = (BASE_DIR / "templates" / "set_password.html").read_text()
-    return HTMLResponse(
-        content=html,
-        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
-    )
 
 
 @app.post("/api/auth/set-password")
@@ -545,18 +491,6 @@ async def auth_logout():
 # ═══════════════════════════════════════════════════════════════════════════
 # SUPER ADMIN  (admin.cscrm.ai)
 # ═══════════════════════════════════════════════════════════════════════════
-
-@app.get("/super")
-async def super_admin_page():
-    """Painel super admin."""
-    html_path = BASE_DIR / "templates" / "super_admin.html"
-    if not html_path.exists():
-        return HTMLResponse("<h1>Super Admin — em construção</h1>", status_code=200)
-    html = html_path.read_text()
-    return HTMLResponse(
-        content=html,
-        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
-    )
 
 
 @app.get("/api/super/overview")
