@@ -1,0 +1,878 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+// ─── Billing types ───────────────────────────────────────────────────────────
+interface Invoice {
+  id: string;
+  date: string;
+  amount: number;
+  status: string;
+  pdf_url?: string;
+  hosted_url?: string;
+}
+
+interface BillingStatus {
+  subscription_status: string;
+  plan_name: string;
+  analyses_this_month: number;
+  monthly_limit: number | null;
+  current_period_end?: string;
+  trial_end?: string;
+  invoices: Invoice[];
+}
+
+// ─── Analysis record ─────────────────────────────────────────────────────────
+interface Analysis {
+  id: string;
+  created_at: string;
+  skin_type?: string;
+  fitzpatrick_type?: string;
+}
+import {
+  getCookie,
+  setCookie,
+  deleteCookie,
+  apiFetch,
+  applyBranding,
+  type ClinicConfig,
+  type Procedure,
+} from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+
+// ─── Default procedures ──────────────────────────────────────────────────────
+const DEFAULT_PROCEDURES: Procedure[] = [
+  { nome: "Toxina Botulínica", tipo: "INJETAVEL", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Preenchedor de Ácido Hialurônico", tipo: "INJETAVEL", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Bioestimulador de Colágeno", tipo: "INJETAVEL", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Fios de PDO", tipo: "INJETAVEL", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Laser Fracionado", tipo: "LASER", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Laser CO2", tipo: "LASER", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Luz Pulsada (IPL)", tipo: "LASER", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "HIFU", tipo: "TECNOLOGIA", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Radiofrequência", tipo: "TECNOLOGIA", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Ultrassom Microfocado", tipo: "TECNOLOGIA", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Microagulhamento", tipo: "TECNOLOGIA", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Dermapen", tipo: "TECNOLOGIA", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Criolipólise", tipo: "TECNOLOGIA", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Peeling de TCA", tipo: "PEELING", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Peeling de Retinol", tipo: "PEELING", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Peeling Mandélico", tipo: "PEELING", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Peeling de Glicólico", tipo: "PEELING", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Skincare Cosmecêutico", tipo: "TOPICO", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Despigmentante Tópico", tipo: "TOPICO", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Filtro Solar Personalizado", tipo: "TOPICO", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Mesoterapia", tipo: "INJETAVEL", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Bioremodelador", tipo: "INJETAVEL", marca: "", video: "", ativo: true, padrao: true },
+  { nome: "Plasma Rico em Plaquetas (PRP)", tipo: "INJETAVEL", marca: "", video: "", ativo: true, padrao: true },
+];
+
+const TIPOS = ["INJETAVEL", "LASER", "TECNOLOGIA", "PEELING", "TOPICO", "OUTROS"];
+
+// ─── Merge saved catalog with defaults ──────────────────────────────────────
+function mergeCatalog(saved: Procedure[]): Procedure[] {
+  const savedNames = new Set(saved.map((p) => p.nome));
+  const defaults = DEFAULT_PROCEDURES.filter((p) => !savedNames.has(p.nome));
+  return [...saved, ...defaults];
+}
+
+// ─── Admin Page ──────────────────────────────────────────────────────────────
+export default function AdminPage() {
+  const [authed, setAuthed] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const [config, setConfig] = useState<ClinicConfig | null>(null);
+  const [procs, setProcs] = useState<Procedure[]>([]);
+  const [fontOptions, setFontOptions] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+
+  // Billing state
+  const [billing, setBilling] = useState<BillingStatus | null>(null);
+  // Analyses state
+  const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  // Upgrade modal
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  // Check auth on mount
+  useEffect(() => {
+    if (getCookie("sb-access-token")) {
+      setAuthed(true);
+    }
+  }, []);
+
+  // Load config when authed
+  useEffect(() => {
+    if (!authed) return;
+    loadConfig();
+  }, [authed]);
+
+  async function doLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
+    try {
+      const resp = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.token) {
+        setCookie("sb-access-token", data.token, 7);
+        setAuthed(true);
+      } else {
+        setLoginError(data.error || "E-mail ou senha inválidos.");
+      }
+    } catch {
+      setLoginError("Erro de conexão.");
+    } finally {
+      setLoginLoading(false);
+    }
+  }
+
+  async function doLogout() {
+    await apiFetch("/api/auth/logout", { method: "POST" });
+    deleteCookie("sb-access-token");
+    setAuthed(false);
+  }
+
+  async function loadConfig() {
+    const resp = await apiFetch("/api/admin/config");
+    if (resp.status === 401 || resp.status === 403) {
+      deleteCookie("sb-access-token");
+      setAuthed(false);
+      return;
+    }
+    const data = await resp.json();
+    setConfig(data);
+    applyBranding(data);
+    const saved: Procedure[] = data.procedures_catalog || [];
+    setProcs(mergeCatalog(saved));
+    setFontOptions(data._font_options || []);
+  }
+
+  async function saveConfig() {
+    if (!config) return;
+    setSaving(true);
+    setSaveMsg("");
+    const payload = {
+      ...config,
+      procedures_catalog: procs.map((p) => ({
+        nome: p.nome,
+        tipo: p.tipo,
+        marca: p.marca || "",
+        video: p.video || "",
+        ativo: p.ativo,
+        padrao: p.padrao,
+      })),
+    };
+    const resp = await apiFetch("/api/admin/config", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+    if (resp.ok) {
+      setSaveMsg("Salvo com sucesso!");
+      applyBranding(config);
+    } else {
+      setSaveMsg("Erro ao salvar.");
+    }
+    setSaving(false);
+    setTimeout(() => setSaveMsg(""), 3000);
+  }
+
+  async function loadBilling() {
+    const resp = await apiFetch("/api/admin/billing/status");
+    if (resp.ok) setBilling(await resp.json());
+  }
+
+  async function loadAnalyses() {
+    const resp = await apiFetch("/api/admin/analyses");
+    if (resp.ok) setAnalyses(await resp.json());
+  }
+
+  async function deleteAnalysis(id: string) {
+    if (!confirm("Remover esta análise?")) return;
+    await apiFetch(`/api/admin/analyses/${id}`, { method: "DELETE" });
+    setAnalyses((prev) => prev.filter((a) => a.id !== id));
+  }
+
+  async function uploadLogo(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    const token = getCookie("sb-access-token");
+    const resp = await fetch("/api/admin/logo", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const data = await resp.json();
+    if (data.logo_url && config) {
+      setConfig({ ...config, logo_url: data.logo_url });
+    }
+  }
+
+  // ─── Login Screen ──────────────────────────────────────────────────────────
+  if (!authed) {
+    return (
+      <main className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-6">
+        <Card className="w-full max-w-sm shadow-lg">
+          <CardHeader className="text-center pb-2">
+            <div className="text-3xl mb-1">✨</div>
+            <CardTitle>Painel da Clínica</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Entre com seu e-mail e senha para continuar.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={doLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              {loginError && (
+                <p className="text-sm text-destructive">{loginError}</p>
+              )}
+              <Button type="submit" className="w-full" disabled={loginLoading}>
+                {loginLoading ? "Entrando…" : "Entrar"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
+
+  // ─── Dashboard ─────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-[#F8F9FA] flex">
+      {/* Sidebar */}
+      <aside className="w-56 flex-shrink-0 bg-white border-r border-gray-100 fixed top-0 left-0 h-full flex flex-col z-20">
+        <div className="p-5 border-b border-gray-100">
+          {config?.logo_url ? (
+            <img src={config.logo_url} alt="logo" className="h-8 object-contain" />
+          ) : (
+            <span className="font-bold text-[#3A3330]">
+              {config?.clinic_name || "Clínica"}
+            </span>
+          )}
+        </div>
+        <nav className="flex-1 py-2">
+          {(["inicio", "aparencia", "procedimentos", "historico", "financeiro", "config"] as const).map(
+            (tab) => {
+              const labels: Record<string, string> = {
+                inicio: "🏠 Início",
+                aparencia: "🎨 Aparência",
+                procedimentos: "💉 Procedimentos",
+                historico: "📋 Histórico",
+                financeiro: "💳 Financeiro",
+                config: "⚙️ Configurações",
+              };
+              return (
+                <button
+                  key={tab}
+                  onClick={() => {
+                    // Trigger tab change via data attr
+                    document
+                      .querySelector(`[data-tab="${tab}"]`)
+                      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+                    if (tab === "historico") loadAnalyses();
+                    if (tab === "financeiro") loadBilling();
+                  }}
+                  className="w-full text-left px-5 py-2.5 text-sm text-[#3A3330] hover:bg-[#F5F0EB] transition-colors"
+                >
+                  {labels[tab]}
+                </button>
+              );
+            }
+          )}
+        </nav>
+        <div className="p-4 border-t border-gray-100 space-y-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs"
+            onClick={() => window.open("/", "_blank")}
+          >
+            Ver prévia
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs text-muted-foreground"
+            onClick={doLogout}
+          >
+            Sair
+          </Button>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <main className="ml-56 flex-1 p-8">
+        {!config ? (
+          <p className="text-muted-foreground">Carregando…</p>
+        ) : (
+          <Tabs defaultValue="inicio">
+            <TabsList className="hidden">
+              {["inicio", "aparencia", "procedimentos", "historico", "financeiro", "config"].map((t) => (
+                <TabsTrigger key={t} value={t} data-tab={t} />
+              ))}
+            </TabsList>
+
+            {/* ── Início ── */}
+            <TabsContent value="inicio">
+              <h1 className="text-2xl font-bold text-[#3A3330] mb-6">Início</h1>
+              <div className="grid grid-cols-2 gap-4 max-w-md">
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-3xl font-bold text-[#3A3330]">
+                      {config.analyses_count ?? 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Análises realizadas
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* ── Aparência ── */}
+            <TabsContent value="aparencia">
+              <div className="max-w-xl space-y-6">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-2xl font-bold text-[#3A3330]">Aparência</h1>
+                  <Button onClick={saveConfig} disabled={saving}>
+                    {saving ? "Salvando…" : "Salvar"}
+                  </Button>
+                </div>
+                {saveMsg && (
+                  <p className={`text-sm ${saveMsg.includes("sucesso") ? "text-green-600" : "text-destructive"}`}>
+                    {saveMsg}
+                  </p>
+                )}
+
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    {/* Logo */}
+                    <div className="space-y-2">
+                      <Label>Logo da clínica</Label>
+                      <div className="flex items-center gap-4">
+                        {config.logo_url && (
+                          <img
+                            src={config.logo_url}
+                            alt="logo"
+                            className="h-16 w-16 object-contain rounded border"
+                          />
+                        )}
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          className="max-w-xs"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) uploadLogo(f);
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Clinic name */}
+                    <div className="space-y-2">
+                      <Label>Nome da clínica</Label>
+                      <Input
+                        value={config.clinic_name}
+                        onChange={(e) =>
+                          setConfig({ ...config, clinic_name: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    {/* Welcome text */}
+                    <div className="space-y-2">
+                      <Label>Texto de boas-vindas</Label>
+                      <Textarea
+                        value={config.welcome_text}
+                        rows={2}
+                        onChange={(e) =>
+                          setConfig({ ...config, welcome_text: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    <Separator />
+
+                    {/* Font */}
+                    <div className="space-y-2">
+                      <Label>Fonte</Label>
+                      <Select
+                        value={config.font}
+                        onValueChange={(v) => setConfig({ ...config, font: v ?? config.font })}
+                      >
+                        <SelectTrigger className="w-64">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(fontOptions.length ? fontOptions : ["Inter"]).map((f) => (
+                            <SelectItem key={f} value={f}>
+                              {f}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Separator />
+
+                    {/* Colors */}
+                    <div className="space-y-3">
+                      <Label>Cores</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {(
+                          [
+                            ["primary", "Primária"],
+                            ["secondary", "Secundária"],
+                            ["accent", "Destaque"],
+                            ["background", "Fundo"],
+                            ["text", "Texto"],
+                          ] as const
+                        ).map(([key, label]) => (
+                          <div key={key} className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={config.colors[key]}
+                              onChange={(e) =>
+                                setConfig({
+                                  ...config,
+                                  colors: { ...config.colors, [key]: e.target.value },
+                                })
+                              }
+                              className="w-8 h-8 rounded cursor-pointer border"
+                            />
+                            <span className="text-sm">{label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* ── Procedimentos ── */}
+            <TabsContent value="procedimentos">
+              <div className="max-w-4xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold text-[#3A3330]">Procedimentos</h1>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      A IA recomendará apenas procedimentos ativos desta lista.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setProcs([
+                          ...procs,
+                          {
+                            nome: "",
+                            tipo: "INJETAVEL",
+                            marca: "",
+                            video: "",
+                            ativo: true,
+                            padrao: false,
+                          },
+                        ])
+                      }
+                    >
+                      + Adicionar
+                    </Button>
+                    <Button onClick={saveConfig} disabled={saving}>
+                      {saving ? "Salvando…" : "Salvar"}
+                    </Button>
+                  </div>
+                </div>
+                {saveMsg && (
+                  <p className={`text-sm ${saveMsg.includes("sucesso") ? "text-green-600" : "text-destructive"}`}>
+                    {saveMsg}
+                  </p>
+                )}
+
+                <Card>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead className="w-32">Marca</TableHead>
+                          <TableHead className="w-36">Tipo</TableHead>
+                          <TableHead className="w-20 text-center">Ativo</TableHead>
+                          {procs.some((p) => !p.padrao) && (
+                            <TableHead className="w-12" />
+                          )}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {procs.map((p, i) => (
+                          <TableRow key={i}>
+                            <TableCell>
+                              <Input
+                                value={p.nome}
+                                placeholder="Nome do procedimento"
+                                className="h-8 text-sm border-0 focus-visible:ring-1"
+                                readOnly={p.padrao}
+                                onChange={(e) => {
+                                  const updated = [...procs];
+                                  updated[i] = { ...p, nome: e.target.value };
+                                  setProcs(updated);
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={p.marca}
+                                placeholder="Ex: Fotona"
+                                className="h-8 text-sm border-0 focus-visible:ring-1"
+                                onChange={(e) => {
+                                  const updated = [...procs];
+                                  updated[i] = { ...p, marca: e.target.value };
+                                  setProcs(updated);
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={p.tipo}
+                                onValueChange={(v) => {
+                                  const updated = [...procs];
+                                  updated[i] = { ...p, tipo: v ?? p.tipo };
+                                  setProcs(updated);
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {TIPOS.map((t) => (
+                                    <SelectItem key={t} value={t}>
+                                      {t}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Switch
+                                checked={p.ativo}
+                                onCheckedChange={(v) => {
+                                  const updated = [...procs];
+                                  updated[i] = { ...p, ativo: v };
+                                  setProcs(updated);
+                                }}
+                              />
+                            </TableCell>
+                            {!p.padrao && (
+                              <TableCell>
+                                <button
+                                  onClick={() =>
+                                    setProcs(procs.filter((_, idx) => idx !== i))
+                                  }
+                                  className="text-muted-foreground hover:text-destructive text-xs"
+                                >
+                                  ✕
+                                </button>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* ── Histórico ── */}
+            <TabsContent value="historico">
+              <div className="max-w-4xl space-y-4">
+                <h1 className="text-2xl font-bold text-[#3A3330]">Histórico</h1>
+                <Card>
+                  <CardContent className="p-0">
+                    {analyses.length === 0 ? (
+                      <p className="p-6 text-sm text-muted-foreground">
+                        Nenhuma análise encontrada.
+                      </p>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Tipo de pele</TableHead>
+                            <TableHead>Fitzpatrick</TableHead>
+                            <TableHead className="w-16" />
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {analyses.map((a) => (
+                            <TableRow key={a.id}>
+                              <TableCell className="text-sm">
+                                {new Date(a.created_at).toLocaleString("pt-BR")}
+                              </TableCell>
+                              <TableCell className="text-sm">{a.skin_type || "—"}</TableCell>
+                              <TableCell className="text-sm">{a.fitzpatrick_type || "—"}</TableCell>
+                              <TableCell>
+                                <button
+                                  onClick={() => deleteAnalysis(a.id)}
+                                  className="text-xs text-muted-foreground hover:text-destructive"
+                                >
+                                  ✕
+                                </button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* ── Financeiro ── */}
+            <TabsContent value="financeiro">
+              <div className="max-w-2xl space-y-4">
+                <h1 className="text-2xl font-bold text-[#3A3330]">Financeiro</h1>
+                {!billing ? (
+                  <p className="text-sm text-muted-foreground">Carregando…</p>
+                ) : (
+                  <>
+                    <Card>
+                      <CardContent className="pt-6 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Plano</span>
+                          <Badge variant="outline">{billing.plan_name || "—"}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Status</span>
+                          <Badge variant={billing.subscription_status === "active" ? "default" : "destructive"}>
+                            {billing.subscription_status || "—"}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Análises este mês</span>
+                          <span className="text-sm">
+                            {billing.analyses_this_month ?? 0} / {billing.monthly_limit ?? "∞"}
+                          </span>
+                        </div>
+                        {billing.monthly_limit && (
+                          <div className="w-full bg-gray-100 rounded-full h-2">
+                            <div
+                              className="bg-[#D99C94] h-2 rounded-full"
+                              style={{
+                                width: `${Math.min(100, (billing.analyses_this_month / billing.monthly_limit) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                        )}
+                        <Button variant="outline" size="sm" onClick={() => setUpgradeOpen(true)}>
+                          Fazer upgrade
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    {billing.invoices?.length > 0 && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base">Faturas</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-0">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Data</TableHead>
+                                  <TableHead>Valor</TableHead>
+                                  <TableHead>Status</TableHead>
+                                  <TableHead />
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {billing.invoices.map((inv) => (
+                                  <TableRow key={inv.id}>
+                                    <TableCell className="text-sm">
+                                      {new Date(inv.date).toLocaleDateString("pt-BR")}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      R$ {(inv.amount / 100).toFixed(2)}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant={inv.status === "paid" ? "default" : "destructive"}>
+                                        {inv.status}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      {inv.pdf_url && (
+                                        <a href={inv.pdf_url} target="_blank" className="text-xs text-blue-500 hover:underline">
+                                          PDF
+                                        </a>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </CardContent>
+                        </Card>
+                      )}
+                  </>
+                )}
+              </div>
+
+              {/* Upgrade Modal */}
+              <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Upgrade de plano</DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-muted-foreground">
+                    Entre em contato com o administrador para fazer upgrade do seu plano.
+                  </p>
+                </DialogContent>
+              </Dialog>
+            </TabsContent>
+
+            {/* ── Config ── */}
+            <TabsContent value="config">
+              <div className="max-w-xl space-y-6">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-2xl font-bold text-[#3A3330]">Configurações</h1>
+                  <Button onClick={saveConfig} disabled={saving}>
+                    {saving ? "Salvando…" : "Salvar"}
+                  </Button>
+                </div>
+                {saveMsg && (
+                  <p className={`text-sm ${saveMsg.includes("sucesso") ? "text-green-600" : "text-destructive"}`}>
+                    {saveMsg}
+                  </p>
+                )}
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Rodapé</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Telefone / WhatsApp</Label>
+                      <Input
+                        value={config.footer.phone}
+                        placeholder="(11) 99999-9999"
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: { ...config.footer, phone: e.target.value },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Instagram</Label>
+                      <Input
+                        value={config.footer.instagram}
+                        placeholder="@clinica"
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: { ...config.footer, instagram: e.target.value },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Endereço</Label>
+                      <Input
+                        value={config.footer.address}
+                        placeholder="Rua, número — Cidade/UF"
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: { ...config.footer, address: e.target.value },
+                          })
+                        }
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Aviso legal</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea
+                      value={config.disclaimer}
+                      rows={4}
+                      onChange={(e) =>
+                        setConfig({ ...config, disclaimer: e.target.value })
+                      }
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
+      </main>
+    </div>
+  );
+}
