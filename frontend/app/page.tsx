@@ -90,59 +90,16 @@ export default function PatientPage() {
       });
   }, []);
 
-  /**
-   * When the front camera captures a selfie, the image is mirrored.
-   * We un-mirror it via canvas so the AI coordinates match the displayed photo.
-   */
-  function unmirrorIfNeeded(file: File): Promise<{ previewUrl: string; fileToSend: File }> {
-    const isFrontCamera = file.name.toLowerCase().includes("image") || (file as unknown as { fromCamera?: boolean }).fromCamera !== false;
-    // Always unmirror on capture="user" — mobile front camera is always mirrored
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d")!;
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const correctedFile = new File([blob], file.name, { type: "image/jpeg" });
-            const previewUrl = URL.createObjectURL(blob);
-            resolve({ previewUrl, fileToSend: correctedFile });
-          } else {
-            // Fallback: use original
-            resolve({ previewUrl: URL.createObjectURL(file), fileToSend: file });
-          }
-        }, "image/jpeg", 0.92);
-      };
-      img.onerror = () => {
-        resolve({ previewUrl: URL.createObjectURL(file), fileToSend: file });
-      };
-      img.src = URL.createObjectURL(file);
-    });
-  }
-
-  async function handleFile(file: File) {
+  function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
       setError("Envie uma imagem (JPG, PNG, HEIC…)");
       return;
     }
     setError("");
-    // Check if file came from camera (capture="user") or from gallery
-    const input = fileRef.current;
-    const fromCamera = input?.hasAttribute("capture");
-    if (fromCamera) {
-      const { previewUrl, fileToSend } = await unmirrorIfNeeded(file);
-      setPreview(previewUrl);
-      analyzeImage(fileToSend);
-    } else {
-      const url = URL.createObjectURL(file);
-      setPreview(url);
-      analyzeImage(file);
-    }
+    // Modern iOS/Android save selfies in correct orientation via EXIF — no manual flip needed
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    analyzeImage(file);
   }
 
   function startStepTimer() {
