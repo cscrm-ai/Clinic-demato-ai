@@ -378,7 +378,7 @@ export default function SuperAdminPage() {
                     >
                       <XAxis type="number" tick={{ fontSize: 11 }} />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={75} />
-                      <Tooltip formatter={(v: number, name: string) => [name === "cost" ? `R$ ${v.toFixed(2)}` : v, name === "cost" ? "Custo" : "Análises"]} />
+                      <Tooltip formatter={(v, name) => [name === "Custo (R$)" ? `R$ ${Number(v).toFixed(2)}` : v, name === "Custo (R$)" ? "Custo" : "Análises"]} />
                       <Bar dataKey="analyses" fill="#D99C94" radius={[0, 4, 4, 0]} name="Análises" />
                       <Bar dataKey="cost" fill="#8b5cf6" radius={[0, 4, 4, 0]} name="Custo (R$)" />
                     </BarChart>
