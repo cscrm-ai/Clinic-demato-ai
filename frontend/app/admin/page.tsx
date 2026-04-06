@@ -150,8 +150,8 @@ export default function AdminPage() {
         body: JSON.stringify({ email, password }),
       });
       const data = await resp.json();
-      if (resp.ok && data.token) {
-        setCookie("sb-access-token", data.token, 7);
+      if (resp.ok && (data.access_token || data.token)) {
+        setCookie("sb-access-token", data.access_token || data.token, 7);
         setAuthed(true);
       } else {
         setLoginError(data.error || "E-mail ou senha inválidos.");
