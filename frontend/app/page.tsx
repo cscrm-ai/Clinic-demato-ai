@@ -268,7 +268,7 @@ export default function PatientPage() {
               src={preview}
               alt="preview"
               className="w-28 h-28 rounded-full object-cover border-4 shadow-lg"
-              style={{ borderColor: "var(--color-primary,#D9BFB2)" }}
+              style={{ borderColor: "var(--color-primary,#D9BFB2)", transform: "scaleX(-1)" }}
             />
             {/* Spinning ring */}
             <div
@@ -346,7 +346,7 @@ export default function PatientPage() {
 
         {/* Face map with markers */}
         {preview && report.findings?.length > 0 && (
-          <div className="relative w-full max-w-[400px] mx-auto rounded-2xl overflow-hidden shadow-lg">
+          <div className="relative w-full max-w-[400px] mx-auto rounded-2xl overflow-hidden shadow-lg" style={{ transform: "scaleX(-1)" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={preview} alt="Foto analisada" className="w-full block" />
             {report.findings.map((f, i) => {
