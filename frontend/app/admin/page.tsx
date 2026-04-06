@@ -50,8 +50,13 @@ interface Analysis {
   created_at: string;
   skin_type?: string;
   fitzpatrick_type?: string;
+  skin_score?: number;
   image_url?: string;
-  report?: AnalysisReport;
+  findings?: AnalysisFinding[];
+  plano_terapeutico?: { curto_prazo?: string; medio_prazo?: string; longo_prazo?: string };
+  am_routine?: string;
+  pm_routine?: string;
+  general_observations?: string;
 }
 import {
   getCookie,
@@ -691,8 +696,7 @@ export default function AdminPage() {
                 ) : (
                   <div className="space-y-2">
                     {analyses.map((a) => {
-                      const r = a.report;
-                      const score = r?.skin_score;
+                      const score = a.skin_score;
                       return (
                         <Card
                           key={a.id}
@@ -705,14 +709,14 @@ export default function AdminPage() {
                               <img src={a.image_url} alt="" className="w-12 h-12 rounded-full object-cover shrink-0 border" />
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold truncate">{a.skin_type || r?.skin_type || "—"}</p>
+                              <p className="text-sm font-semibold truncate">{a.skin_type || "—"}</p>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(a.created_at).toLocaleString("pt-BR")} · Fototipo {a.fitzpatrick_type || r?.fitzpatrick_type || "—"}
+                                {new Date(a.created_at).toLocaleString("pt-BR")} · Fototipo {a.fitzpatrick_type || "—"}
                                 {typeof score === "number" && ` · Score ${score}/100`}
                               </p>
                             </div>
                             <Badge variant="outline" className="text-xs shrink-0">
-                              {r?.findings?.length ?? 0} achados
+                              {a.findings?.length ?? 0} achados
                             </Badge>
                             <button
                               onClick={(e) => { e.stopPropagation(); deleteAnalysis(a.id); }}
@@ -738,18 +742,16 @@ export default function AdminPage() {
                   </DialogHeader>
                   {selectedAnalysis && (() => {
                     const a = selectedAnalysis;
-                    const r = a.report;
-                    if (!r) return <p className="text-sm text-muted-foreground">Dados não disponíveis.</p>;
                     const HORIZON: Record<string, string> = { CURTO_PRAZO: "Curto prazo", MEDIO_PRAZO: "Médio prazo", LONGO_PRAZO: "Longo prazo" };
                     const PCOLOR: Record<string, string> = { PRIORITARIO: "bg-red-100 text-red-800", RECOMENDADO: "bg-yellow-100 text-yellow-800", OPCIONAL: "bg-green-100 text-green-800" };
                     return (
                       <div className="space-y-4">
                         {/* Face map */}
-                        {a.image_url && r.findings?.length ? (
+                        {a.image_url && a.findings?.length ? (
                           <div className="relative w-full rounded-xl overflow-hidden">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={a.image_url} alt="Foto" className="w-full block" />
-                            {r.findings.map((f, i) => {
+                            {a.findings.map((f, i) => {
                               const x = (f.x_point ?? 0) * 100;
                               const y = (f.y_point ?? 0) * 100;
                               if (x === 0 && y === 0) return null;
@@ -768,17 +770,17 @@ export default function AdminPage() {
 
                         {/* Badges */}
                         <div className="flex gap-2 flex-wrap">
-                          <Badge style={{ background: "#D99C94", color: "#fff" }}>FOTOTIPO {r.fitzpatrick_type}</Badge>
-                          {typeof r.skin_score === "number" && (
-                            <Badge style={{ background: r.skin_score >= 80 ? "#22c55e" : r.skin_score >= 60 ? "#eab308" : r.skin_score >= 40 ? "#f97316" : "#ef4444", color: "#fff" }}>
-                              SCORE {r.skin_score}/100
+                          <Badge style={{ background: "#D99C94", color: "#fff" }}>FOTOTIPO {a.fitzpatrick_type}</Badge>
+                          {typeof a.skin_score === "number" && (
+                            <Badge style={{ background: a.skin_score >= 80 ? "#22c55e" : a.skin_score >= 60 ? "#eab308" : a.skin_score >= 40 ? "#f97316" : "#ef4444", color: "#fff" }}>
+                              SCORE {a.skin_score}/100
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm">{r.skin_type}</p>
+                        <p className="text-sm">{a.skin_type}</p>
 
                         {/* Findings */}
-                        {r.findings?.map((f, i) => (
+                        {a.findings?.map((f, i) => (
                           <Card key={i} className="border-0 shadow-sm" style={{ borderLeft: `3px solid ${f.priority === "PRIORITARIO" ? "#E74C3C" : f.priority === "OPCIONAL" ? "#827870" : "#D99C94"}` }}>
                             <CardContent className="pt-3 pb-2 space-y-1">
                               <div className="flex items-center justify-between gap-2">
@@ -799,31 +801,31 @@ export default function AdminPage() {
                         ))}
 
                         {/* Plan */}
-                        {r.plano_terapeutico && (
+                        {a.plano_terapeutico && (
                           <div className="space-y-2">
                             <h3 className="text-sm font-bold">Plano Terapêutico</h3>
                             {[
-                              { l: "Curto prazo", t: r.plano_terapeutico.curto_prazo, c: "#E74C3C" },
-                              { l: "Médio prazo", t: r.plano_terapeutico.medio_prazo, c: "#D99C94" },
-                              { l: "Longo prazo", t: r.plano_terapeutico.longo_prazo, c: "#827870" },
+                              { l: "Curto prazo", t: a.plano_terapeutico.curto_prazo, c: "#E74C3C" },
+                              { l: "Médio prazo", t: a.plano_terapeutico.medio_prazo, c: "#D99C94" },
+                              { l: "Longo prazo", t: a.plano_terapeutico.longo_prazo, c: "#827870" },
                             ].map(({ l, t, c }) => t ? <div key={l}><p className="text-xs font-bold" style={{ color: c }}>{l}</p><p className="text-xs opacity-80">{t}</p></div> : null)}
                           </div>
                         )}
 
                         {/* Routines */}
-                        {(r.am_routine || r.pm_routine) && (
+                        {(a.am_routine || a.pm_routine) && (
                           <div className="space-y-2">
                             <h3 className="text-sm font-bold">Rotina</h3>
-                            {r.am_routine && <div><p className="text-xs font-bold" style={{ color: "#D99C94" }}>Manhã</p><p className="text-xs opacity-75 whitespace-pre-line">{r.am_routine}</p></div>}
-                            {r.pm_routine && <div><p className="text-xs font-bold" style={{ color: "#D99C94" }}>Noite</p><p className="text-xs opacity-75 whitespace-pre-line">{r.pm_routine}</p></div>}
+                            {a.am_routine && <div><p className="text-xs font-bold" style={{ color: "#D99C94" }}>Manhã</p><p className="text-xs opacity-75 whitespace-pre-line">{a.am_routine}</p></div>}
+                            {a.pm_routine && <div><p className="text-xs font-bold" style={{ color: "#D99C94" }}>Noite</p><p className="text-xs opacity-75 whitespace-pre-line">{a.pm_routine}</p></div>}
                           </div>
                         )}
 
                         {/* Observations */}
-                        {r.general_observations && (
+                        {a.general_observations && (
                           <div>
                             <h3 className="text-sm font-bold">Observações</h3>
-                            <p className="text-xs opacity-70 whitespace-pre-line">{r.general_observations}</p>
+                            <p className="text-xs opacity-70 whitespace-pre-line">{a.general_observations}</p>
                           </div>
                         )}
                       </div>
