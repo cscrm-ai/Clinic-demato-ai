@@ -286,6 +286,46 @@ body {
     transition: background .2s;
 }
 .btn-add-video:hover { background: #E5DDD5; }
+.proc-list { display: flex; flex-direction: column; gap: .6rem; }
+.proc-entry {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: .5rem;
+    align-items: center;
+}
+.proc-entry input {
+    padding: .55rem .75rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: .5rem;
+    font-size: .85rem;
+    font-family: inherit;
+    color: #3A3330;
+    transition: border-color .2s;
+}
+.proc-entry input:focus { outline: none; border-color: #D99C94; }
+.proc-entry select {
+    padding: .55rem .5rem;
+    border: 1.5px solid #E0E0E0;
+    border-radius: .5rem;
+    font-size: .85rem;
+    font-family: inherit;
+    color: #3A3330;
+    background: #fff;
+    cursor: pointer;
+}
+.proc-header {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: .5rem;
+    margin-bottom: .25rem;
+}
+.proc-header span {
+    font-size: .72rem;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
 .video-header {
     display: grid;
     grid-template-columns: 1fr 1fr auto;
@@ -576,6 +616,19 @@ body {
             </div>
         </div>
 
+        <!-- Procedimentos da Clínica -->
+        <div class="card">
+            <h2>Procedimentos da Clínica</h2>
+            <p style="font-size:.85rem;color:#888;margin-bottom:1rem">Cadastre os procedimentos e tecnologias que sua clínica oferece. A IA recomendará <strong>APENAS</strong> o que estiver nesta lista. Se vazia, a IA sugere livremente.</p>
+            <div class="proc-header">
+                <span>Nome do Procedimento / Tecnologia</span>
+                <span>Tipo</span>
+                <span></span>
+            </div>
+            <div class="proc-list" id="procList"></div>
+            <button class="btn-add-video" onclick="addProc()">+ Adicionar Procedimento</button>
+        </div>
+
         <!-- Vídeos dos Procedimentos -->
         <div class="card">
             <h2>Vídeos dos Procedimentos</h2>
@@ -662,6 +715,9 @@ function populateForm() {
 
     document.getElementById('cfgDisclaimer').value = config.disclaimer || '';
 
+    // Procedures catalog
+    renderProcs();
+
     // Videos
     renderVideos();
 
@@ -740,6 +796,10 @@ async function saveConfig() {
         },
         disclaimer: document.getElementById('cfgDisclaimer').value,
         analyses_count: config.analyses_count || 0,
+        procedures_catalog: Array.from(document.querySelectorAll('.proc-entry')).map(row => ({
+            nome: row.querySelector('.proc-nome').value.trim(),
+            tipo: row.querySelector('.proc-tipo').value,
+        })).filter(p => p.nome),
         videos: Array.from(document.querySelectorAll('.video-entry')).map(row => ({
             procedure: row.querySelector('.video-proc').value.trim(),
             url: row.querySelector('.video-url').value.trim(),
@@ -853,6 +913,40 @@ async function deleteAnalysis(id) {
         document.getElementById('analysesContainer').innerHTML =
             '<div class="analyses-empty">Nenhuma análise realizada ainda.</div>';
     }
+}
+
+// ── Procedures Catalog ──
+function renderProcs() {
+    const procs = config.procedures_catalog || [];
+    const list = document.getElementById('procList');
+    const tipos = ['INJETAVEL','LASER','TECNOLOGIA','PEELING','TOPICO','OUTROS'];
+    if (!procs.length) {
+        list.innerHTML = '<p style="font-size:.82rem;color:#bbb;padding:.25rem 0">Nenhum procedimento cadastrado — IA sugere livremente.</p>';
+        return;
+    }
+    list.innerHTML = procs.map((p, i) =>
+        '<div class="proc-entry">' +
+            '<input class="proc-nome" placeholder="Ex: Toxina Botulínica" value="' + (p.nome || '').replace(/"/g, '&quot;') + '">' +
+            '<select class="proc-tipo">' +
+                tipos.map(t => '<option value="' + t + '"' + (p.tipo === t ? ' selected' : '') + '>' + t + '</option>').join('') +
+            '</select>' +
+            '<button class="btn-remove-video" onclick="removeProc(' + i + ')" aria-label="Remover">✕</button>' +
+        '</div>'
+    ).join('');
+}
+
+function addProc() {
+    if (!config.procedures_catalog) config.procedures_catalog = [];
+    config.procedures_catalog.push({ nome: '', tipo: 'INJETAVEL' });
+    renderProcs();
+    const inputs = document.querySelectorAll('.proc-nome');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+function removeProc(i) {
+    if (!config.procedures_catalog) return;
+    config.procedures_catalog.splice(i, 1);
+    renderProcs();
 }
 
 // ── Videos ──

@@ -39,6 +39,7 @@ DEFAULT_CONFIG = {
     "disclaimer": "Este laudo é orientativo e não substitui consulta médica presencial. Diagnósticos definitivos, prescrições e procedimentos exigem avaliação clínica completa por profissional habilitado.",
     "analyses_count": 0,
     "videos": [],  # lista de { "procedure": str, "url": str }
+    "procedures_catalog": [],  # lista de {"nome": str, "tipo": str}
 }
 
 FONT_OPTIONS = [

@@ -245,7 +245,7 @@ Sugira rotina personalizada com base nos achados, incluindo:
 - Foque em PROCEDIMENTOS ESTETICOS, nao em produtos comerciais"""
 
 
-def analyze_image(img_path: str) -> SkinAnalysisReport:
+def analyze_image(img_path: str, procedures_catalog: list = None) -> SkinAnalysisReport:
     """Analisa uma imagem de pele e retorna o laudo estruturado."""
 
     agent = Agent(
@@ -255,6 +255,26 @@ def analyze_image(img_path: str) -> SkinAnalysisReport:
         instructions=SYSTEM_PROMPT,
         markdown=True,
     )
+
+    catalog_block = ""
+    if procedures_catalog:
+        valid_items = [p for p in procedures_catalog if p.get("nome")]
+        if valid_items:
+            items_str = "\n".join(
+                f"  - {p['nome']} [{p.get('tipo', 'OUTROS')}]"
+                for p in valid_items
+            )
+            catalog_block = f"""
+
+⚠️ STRICT CLINIC CATALOG — YOU MUST FOLLOW THIS:
+The clinic only offers the procedures listed below.
+You MUST ONLY recommend procedures from this exact list.
+Do NOT suggest any procedure not in this list, even if clinically indicated.
+If no procedure from the list fits a finding, omit procedimentos_indicados for that finding.
+
+AVAILABLE PROCEDURES:
+{items_str}
+"""
 
     user_prompt = """Analyze the skin image with MAXIMUM DETAIL and generate the full dermatological report
 focused on AESTHETIC PROCEDURES.
@@ -269,7 +289,7 @@ Remember:
 - Include procedimentos_indicados for each finding with sessoes_estimadas
 - Generate the plano_terapeutico with curto/medio/longo prazo
 - Include AM and PM skincare routines
-- Focus on aesthetic procedures, NOT commercial products"""
+- Focus on aesthetic procedures, NOT commercial products""" + catalog_block
 
     response = agent.run(user_prompt, images=[Image(filepath=img_path)])
     report = response.content

@@ -137,7 +137,9 @@ async def analyze(image: UploadFile = File(...)):
         with open(file_path, "wb") as f:
             shutil.copyfileobj(image.file, f)
 
-        report = analyze_image(str(file_path.resolve()))
+        clinic_config = load_config()
+        catalog = clinic_config.get("procedures_catalog", [])
+        report = analyze_image(str(file_path.resolve()), procedures_catalog=catalog)
         result = report.model_dump()
 
         # Salva registro no histórico do admin
