@@ -92,6 +92,14 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -166,11 +174,21 @@ export default function AdminPage() {
     }
   }, []);
 
-  // Load config when authed
+  // Load config + dashboard data when authed
   useEffect(() => {
     if (!authed) return;
     loadConfig();
+    loadBilling();
+    loadAnalyses();
   }, [authed]);
+
+  // Auto-load data when tab changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!authed) return;
+    if (activeTab === "historico" && analyses.length === 0 && !analysesLoading) loadAnalyses();
+    if (activeTab === "financeiro" && !billing) loadBilling();
+  }, [activeTab, authed]);
 
   async function doLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -410,18 +428,205 @@ export default function AdminPage() {
             {/* ── Início ── */}
             <TabsContent value="inicio">
               <h1 className="text-2xl font-bold text-[#3A3330] mb-6">Início</h1>
-              <div className="grid grid-cols-2 gap-4 max-w-md">
+
+              {/* ── Métricas ── */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-3xl font-bold text-[#3A3330]">
-                      {config.analyses_count ?? 0}
+                  <CardContent className="pt-5 pb-4">
+                    <p className="text-2xl font-bold" style={{ color: "#D99C94" }}>
+                      {billing ? `${billing.analyses_this_month ?? 0}${billing.monthly_limit ? ` / ${billing.monthly_limit}` : ""}` : "—"}
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Análises realizadas
+                    <p className="text-[11px] text-muted-foreground mt-1">Análises este mês</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-5 pb-4">
+                    <p className="text-2xl font-bold" style={{ color: "#8b5cf6" }}>
+                      {billing?.plan_name || "—"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Plano {billing?.subscription_status ? <Badge variant={billing.subscription_status === "active" ? "default" : billing.subscription_status === "trialing" ? "secondary" : "destructive"} className="text-[9px] ml-1">{billing.subscription_status}</Badge> : null}
                     </p>
                   </CardContent>
                 </Card>
+                <Card>
+                  <CardContent className="pt-5 pb-4">
+                    <p className="text-2xl font-bold" style={{ color: "#22c55e" }}>
+                      {billing?.monthly_limit
+                        ? Math.max(0, (billing.monthly_limit ?? 0) - (billing.analyses_this_month ?? 0))
+                        : "∞"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1">Análises restantes</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-5 pb-4">
+                    <p className="text-2xl font-bold" style={{ color: "#3b82f6" }}>
+                      {procs.filter((p) => p.ativo).length} / {procs.length}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1">Procedimentos ativos</p>
+                  </CardContent>
+                </Card>
               </div>
+
+              {/* ── Gráfico: análises por dia (30d) ── */}
+              {analyses.length > 0 && (() => {
+                const dayCounts: Record<string, number> = {};
+                for (const a of analyses) {
+                  const day = (a.created_at || "").slice(0, 10);
+                  if (day) dayCounts[day] = (dayCounts[day] || 0) + 1;
+                }
+                const now = new Date();
+                const chart = Array.from({ length: 30 }, (_, i) => {
+                  const d = new Date(now);
+                  d.setDate(d.getDate() - (29 - i));
+                  const ds = d.toISOString().slice(0, 10);
+                  return { date: ds.slice(5), count: dayCounts[ds] || 0 };
+                });
+                return (
+                  <Card className="mb-8">
+                    <CardHeader><CardTitle className="text-base">Análises — últimos 30 dias</CardTitle></CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <BarChart data={chart}>
+                          <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} />
+                          <YAxis tick={{ fontSize: 10 }} />
+                          <Tooltip />
+                          <Bar dataKey="count" fill="#D99C94" radius={[4, 4, 0, 0]} name="Análises" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* ── Insights: top achados + distribuição de prioridade ── */}
+              {analyses.length > 0 && (() => {
+                const descCount: Record<string, number> = {};
+                let prio = 0, recom = 0, opc = 0;
+                for (const a of analyses) {
+                  for (const f of a.findings || []) {
+                    const desc = f.description || "";
+                    if (desc) descCount[desc] = (descCount[desc] || 0) + 1;
+                    if (f.priority === "PRIORITARIO") prio++;
+                    else if (f.priority === "RECOMENDADO") recom++;
+                    else if (f.priority === "OPCIONAL") opc++;
+                  }
+                }
+                const top5 = Object.entries(descCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                const totalFindings = prio + recom + opc;
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <Card>
+                      <CardHeader><CardTitle className="text-base">Top 5 achados</CardTitle></CardHeader>
+                      <CardContent className="space-y-2">
+                        {top5.map(([desc, count], i) => (
+                          <div key={i} className="flex items-center justify-between gap-2 text-sm">
+                            <span className="truncate">{desc}</span>
+                            <Badge variant="outline" className="shrink-0">{count}x</Badge>
+                          </div>
+                        ))}
+                        {top5.length === 0 && <p className="text-xs text-muted-foreground">Sem dados.</p>}
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader><CardTitle className="text-base">Distribuição de prioridade</CardTitle></CardHeader>
+                      <CardContent className="space-y-3">
+                        {totalFindings > 0 ? [
+                          { label: "Prioritário", count: prio, color: "#E74C3C" },
+                          { label: "Recomendado", count: recom, color: "#D99C94" },
+                          { label: "Opcional", count: opc, color: "#827870" },
+                        ].map(({ label, count, color }) => (
+                          <div key={label}>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span>{label}</span>
+                              <span>{count} ({totalFindings > 0 ? Math.round(count / totalFindings * 100) : 0}%)</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${totalFindings > 0 ? (count / totalFindings * 100) : 0}%`, background: color }} />
+                            </div>
+                          </div>
+                        )) : <p className="text-xs text-muted-foreground">Sem dados.</p>}
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })()}
+
+              {/* ── Últimas 5 análises ── */}
+              <Card className="mb-8">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">Últimas análises</CardTitle>
+                    <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setActiveTab("historico"); loadAnalyses(); }}>
+                      Ver histórico completo →
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {analysesLoading ? (
+                    <p className="text-xs text-muted-foreground">Carregando…</p>
+                  ) : analyses.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhuma análise ainda.</p>
+                  ) : (
+                    analyses.slice(0, 5).map((a) => (
+                      <div
+                        key={a.id}
+                        className="flex items-center gap-3 py-2 cursor-pointer hover:bg-muted/50 rounded-lg px-2 transition-colors"
+                        onClick={() => setSelectedAnalysis(a)}
+                      >
+                        {a.image_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={a.image_url} alt="" className="w-10 h-10 rounded-full object-cover shrink-0 border" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate">{a.skin_type || "—"}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {new Date(a.created_at).toLocaleString("pt-BR")}
+                            {a.duration_ms ? ` · ${Math.round(a.duration_ms / 1000)}s` : ""}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] shrink-0">{a.findings?.length ?? 0} achados</Badge>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* ── Status do plano ── */}
+              {billing && (
+                <Card>
+                  <CardContent className="pt-5 pb-4">
+                    {billing.monthly_limit ? (
+                      <>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span>Uso do plano</span>
+                          <span className="font-semibold">{billing.analyses_this_month ?? 0} / {billing.monthly_limit}</span>
+                        </div>
+                        <div className="h-3 rounded-full bg-muted overflow-hidden mb-2">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(100, ((billing.analyses_this_month ?? 0) / billing.monthly_limit) * 100)}%`,
+                              background: ((billing.analyses_this_month ?? 0) / billing.monthly_limit) > 0.8 ? "#ef4444" : "#D99C94",
+                            }}
+                          />
+                        </div>
+                        {((billing.analyses_this_month ?? 0) / billing.monthly_limit) > 0.8 && (
+                          <p className="text-xs text-red-500">⚠️ Você está perto do limite. Considere fazer upgrade.</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm">Plano ilimitado — sem limite de análises.</p>
+                    )}
+                    {billing.subscription_status === "trialing" && billing.trial_ends_at && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Período de teste termina em {new Date(String(billing.trial_ends_at)).toLocaleDateString("pt-BR")}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* ── Aparência ── */}
