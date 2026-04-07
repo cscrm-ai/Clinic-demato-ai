@@ -687,43 +687,106 @@ export default function SuperAdminPage() {
           <TabsContent value="planos">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold text-[#3A3330]">Planos</h1>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  await apiFetch("/api/super/billing/sync-plans", { method: "POST" });
-                  loadPlans();
-                }}
-              >
-                Sincronizar Stripe
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    await apiFetch("/api/super/plans", {
+                      method: "POST",
+                      body: JSON.stringify({ name: "Novo Plano", price_cents: 0, monthly_analyses_limit: 10 }),
+                    });
+                    loadPlans();
+                  }}
+                >
+                  + Novo plano
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    await apiFetch("/api/super/billing/sync-plans", { method: "POST" });
+                    alert("Planos sincronizados com o Stripe!");
+                  }}
+                >
+                  Sincronizar Stripe
+                </Button>
+              </div>
             </div>
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Preço/mês</TableHead>
-                      <TableHead>Limite mensal</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {plans.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell className="text-sm font-medium">{p.name}</TableCell>
-                        <TableCell className="text-sm">
-                          R$ {(p.price_cents / 100).toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {p.monthly_analyses_limit ?? "∞"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              {plans.map((p, idx) => (
+                <Card key={p.id}>
+                  <CardContent className="pt-5 pb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Nome</Label>
+                        <Input
+                          value={p.name}
+                          className="h-9"
+                          onChange={(e) => {
+                            const updated = [...plans];
+                            updated[idx] = { ...p, name: e.target.value };
+                            setPlans(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Preço/mês (R$)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={(p.price_cents / 100).toFixed(2)}
+                          className="h-9"
+                          onChange={(e) => {
+                            const updated = [...plans];
+                            updated[idx] = { ...p, price_cents: Math.round(Number(e.target.value) * 100) };
+                            setPlans(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Limite mensal de análises</Label>
+                        <Input
+                          type="number"
+                          placeholder="Vazio = ilimitado"
+                          value={p.monthly_analyses_limit ?? ""}
+                          className="h-9"
+                          onChange={(e) => {
+                            const updated = [...plans];
+                            updated[idx] = {
+                              ...p,
+                              monthly_analyses_limit: e.target.value === "" ? null : Number(e.target.value),
+                            };
+                            setPlans(updated);
+                          }}
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        className="h-9"
+                        onClick={async () => {
+                          await apiFetch(`/api/super/plans/${p.id}`, {
+                            method: "PUT",
+                            body: JSON.stringify({
+                              name: p.name,
+                              price_cents: p.price_cents,
+                              monthly_analyses_limit: p.monthly_analyses_limit,
+                            }),
+                          });
+                          alert(`Plano "${p.name}" salvo!`);
+                        }}
+                      >
+                        Salvar
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {p.monthly_analyses_limit
+                        ? `Máximo ${p.monthly_analyses_limit} análises/mês. Ao atingir, a clínica recebe erro 402.`
+                        : "Análises ilimitadas (sem bloqueio de quota)."}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
 
           {/* ── Configurações ── */}

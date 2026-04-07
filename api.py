@@ -552,8 +552,44 @@ async def super_update_model_costs(request: Request, user_id: str = Depends(requ
 async def super_list_plans(user_id: str = Depends(require_super_admin)):
     """Lista planos disponíveis."""
     db = get_db()
-    result = db.table("plans").select("id,name,price_cents").order("price_cents").execute()
+    result = db.table("plans").select("*").order("price_cents").execute()
     return result.data or []
+
+
+@app.put("/api/super/plans/{plan_id}")
+async def super_update_plan(
+    plan_id: str,
+    request: Request,
+    user_id: str = Depends(require_super_admin),
+):
+    """Atualiza um plano existente."""
+    db = get_db()
+    body = await request.json()
+    allowed = {"name", "price_cents", "monthly_analyses_limit", "features"}
+    patch = {k: v for k, v in body.items() if k in allowed}
+    if not patch:
+        return JSONResponse(status_code=400, content={"error": "Nenhum campo válido."})
+    result = db.table("plans").update(patch).eq("id", plan_id).execute()
+    if not result.data:
+        return JSONResponse(status_code=404, content={"error": "Plano não encontrado."})
+    return result.data[0]
+
+
+@app.post("/api/super/plans")
+async def super_create_plan(
+    request: Request,
+    user_id: str = Depends(require_super_admin),
+):
+    """Cria um novo plano."""
+    db = get_db()
+    body = await request.json()
+    record = {
+        "name": body.get("name", "Novo Plano"),
+        "price_cents": int(body.get("price_cents", 0)),
+        "monthly_analyses_limit": body.get("monthly_analyses_limit"),
+    }
+    result = db.table("plans").insert(record).execute()
+    return result.data[0]
 
 
 @app.get("/api/super/clinics")
