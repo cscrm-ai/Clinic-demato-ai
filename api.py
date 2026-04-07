@@ -505,12 +505,16 @@ async def super_get_model_costs(user_id: str = Depends(require_super_admin)):
     from tools.cost_tracker import (
         GEMINI_INPUT_PRICE_PER_1M_USD,
         GEMINI_OUTPUT_PRICE_PER_1M_USD,
+        MOONDREAM_INPUT_PRICE_PER_1M_USD,
+        MOONDREAM_OUTPUT_PRICE_PER_1M_USD,
         MOONDREAM_PRICE_PER_CALL_USD,
         USD_TO_BRL,
     )
     return {
         "gemini_input_per_1m_usd": str(GEMINI_INPUT_PRICE_PER_1M_USD),
         "gemini_output_per_1m_usd": str(GEMINI_OUTPUT_PRICE_PER_1M_USD),
+        "moondream_input_per_1m_usd": str(MOONDREAM_INPUT_PRICE_PER_1M_USD),
+        "moondream_output_per_1m_usd": str(MOONDREAM_OUTPUT_PRICE_PER_1M_USD),
         "moondream_per_call_usd": str(MOONDREAM_PRICE_PER_CALL_USD),
         "usd_to_brl": str(USD_TO_BRL),
     }
@@ -528,8 +532,16 @@ async def super_update_model_costs(request: Request, user_id: str = Depends(requ
         ct.GEMINI_INPUT_PRICE_PER_1M_USD = Decimal(str(body["gemini_input_per_1m_usd"]))
     if "gemini_output_per_1m_usd" in body:
         ct.GEMINI_OUTPUT_PRICE_PER_1M_USD = Decimal(str(body["gemini_output_per_1m_usd"]))
-    if "moondream_per_call_usd" in body:
-        ct.MOONDREAM_PRICE_PER_CALL_USD = Decimal(str(body["moondream_per_call_usd"]))
+    if "moondream_input_per_1m_usd" in body:
+        ct.MOONDREAM_INPUT_PRICE_PER_1M_USD = Decimal(str(body["moondream_input_per_1m_usd"]))
+    if "moondream_output_per_1m_usd" in body:
+        ct.MOONDREAM_OUTPUT_PRICE_PER_1M_USD = Decimal(str(body["moondream_output_per_1m_usd"]))
+    # Recalculate per-call price
+    if "moondream_input_per_1m_usd" in body or "moondream_output_per_1m_usd" in body:
+        ct.MOONDREAM_PRICE_PER_CALL_USD = (
+            (Decimal(ct.MOONDREAM_AVG_TOKENS_IN_PER_CALL) / Decimal("1_000_000")) * ct.MOONDREAM_INPUT_PRICE_PER_1M_USD +
+            (Decimal(ct.MOONDREAM_AVG_TOKENS_OUT_PER_CALL) / Decimal("1_000_000")) * ct.MOONDREAM_OUTPUT_PRICE_PER_1M_USD
+        )
     if "usd_to_brl" in body:
         ct.USD_TO_BRL = Decimal(str(body["usd_to_brl"]))
 

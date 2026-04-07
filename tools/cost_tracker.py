@@ -19,12 +19,23 @@ from decimal import ROUND_HALF_UP, Decimal
 # ---------------------------------------------------------------------------
 
 # Gemini 2.0 Flash Lite — preço por 1 milhão de tokens (USD)
+# NOTA: Flash Lite será descontinuado em 01/06/2026 — migrar para outro modelo
 GEMINI_INPUT_PRICE_PER_1M_USD  = Decimal("0.075")
 GEMINI_OUTPUT_PRICE_PER_1M_USD = Decimal("0.300")
 
-# Moondream3 via FAL AI — preço por call (USD)
-# TODO: confirmar valor real na dashboard do FAL
-MOONDREAM_PRICE_PER_CALL_USD = Decimal("0.003")
+# Moondream3 via FAL AI — preço por 1M tokens (USD)
+# Input: $0.40/1M tokens, Output: $3.50/1M tokens
+# Estimativa por call (~500 tokens in, ~50 tokens out): ~$0.000375
+MOONDREAM_INPUT_PRICE_PER_1M_USD  = Decimal("0.40")
+MOONDREAM_OUTPUT_PRICE_PER_1M_USD = Decimal("3.50")
+# Estimativa de tokens por call (pointing/grounding task)
+MOONDREAM_AVG_TOKENS_IN_PER_CALL  = 500
+MOONDREAM_AVG_TOKENS_OUT_PER_CALL = 50
+# Legacy: preço por call calculado a partir dos tokens
+MOONDREAM_PRICE_PER_CALL_USD = (
+    (Decimal(MOONDREAM_AVG_TOKENS_IN_PER_CALL) / Decimal("1_000_000")) * Decimal("0.40") +
+    (Decimal(MOONDREAM_AVG_TOKENS_OUT_PER_CALL) / Decimal("1_000_000")) * Decimal("3.50")
+)
 
 # Taxa de conversão USD → BRL (centavos)
 # 1 USD = USD_TO_BRL reais = USD_TO_BRL * 100 centavos

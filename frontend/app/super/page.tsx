@@ -768,17 +768,34 @@ export default function SuperAdminPage() {
                 <CardHeader>
                   <CardTitle className="text-base">Moondream3 (FAL AI)</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-1 max-w-xs">
-                    <Label className="text-xs">Preço por chamada (USD)</Label>
-                    <Input
-                      type="number"
-                      step="0.001"
-                      value={modelCosts.moondream_per_call_usd || ""}
-                      onChange={(e) => setModelCosts({ ...modelCosts, moondream_per_call_usd: e.target.value })}
-                      placeholder="0.003"
-                    />
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Preço input / 1M tokens (USD)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={modelCosts.moondream_input_per_1m_usd || ""}
+                        onChange={(e) => setModelCosts({ ...modelCosts, moondream_input_per_1m_usd: e.target.value })}
+                        placeholder="0.40"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Preço output / 1M tokens (USD)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={modelCosts.moondream_output_per_1m_usd || ""}
+                        onChange={(e) => setModelCosts({ ...modelCosts, moondream_output_per_1m_usd: e.target.value })}
+                        placeholder="3.50"
+                      />
+                    </div>
                   </div>
+                  {modelCosts.moondream_per_call_usd && (
+                    <p className="text-xs text-muted-foreground">
+                      Custo estimado por call: US$ {Number(modelCosts.moondream_per_call_usd).toFixed(6)} (~500 tokens in, ~50 tokens out)
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -810,18 +827,22 @@ export default function SuperAdminPage() {
                     {(() => {
                       const gin = Number(modelCosts.gemini_input_per_1m_usd || 0);
                       const gout = Number(modelCosts.gemini_output_per_1m_usd || 0);
-                      const moon = Number(modelCosts.moondream_per_call_usd || 0);
+                      const min = Number(modelCosts.moondream_input_per_1m_usd || 0);
+                      const mout = Number(modelCosts.moondream_output_per_1m_usd || 0);
                       const fx = Number(modelCosts.usd_to_brl || 5.1);
-                      // Média estimada: ~3000 tokens in, ~2000 out, ~7 moondream calls
+                      // Gemini: ~3000 tokens in, ~2000 tokens out
                       const geminiUsd = (3000 / 1_000_000) * gin + (2000 / 1_000_000) * gout;
-                      const moonUsd = 7 * moon;
+                      // Moondream: 7 calls × (~500 tokens in + ~50 tokens out cada)
+                      const moonCallUsd = (500 / 1_000_000) * min + (50 / 1_000_000) * mout;
+                      const moonUsd = 7 * moonCallUsd;
                       const totalBrl = (geminiUsd + moonUsd) * fx;
                       return (
                         <>
                           <p>Gemini (3k in / 2k out): <strong>US$ {geminiUsd.toFixed(6)}</strong></p>
-                          <p>Moondream (7 calls): <strong>US$ {moonUsd.toFixed(4)}</strong></p>
-                          <p>Total USD: <strong>US$ {(geminiUsd + moonUsd).toFixed(4)}</strong></p>
-                          <p className="text-base font-bold mt-2" style={{ color: "#D99C94" }}>
+                          <p>Moondream (7 calls × 500+50 tokens): <strong>US$ {moonUsd.toFixed(6)}</strong></p>
+                          <p>Total USD: <strong>US$ {(geminiUsd + moonUsd).toFixed(5)}</strong></p>
+                          <p>Total BRL: <strong>R$ {totalBrl.toFixed(4)}</strong></p>
+                          <p className="text-lg font-bold mt-2" style={{ color: "#D99C94" }}>
                             ≈ R$ {totalBrl.toFixed(4)} por análise
                           </p>
                         </>
