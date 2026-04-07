@@ -163,6 +163,10 @@ export default function AdminPage() {
 
   // Billing state
   const [billing, setBilling] = useState<BillingStatus | null>(null);
+  // Buy analyses modal
+  const [buyOpen, setBuyOpen] = useState(false);
+  const [buyQty, setBuyQty] = useState(10);
+  const [buyLoading, setBuyLoading] = useState(false);
   // Analyses state
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [analysesLoading, setAnalysesLoading] = useState(false);
@@ -622,21 +626,7 @@ export default function AdminPage() {
                             {billing.extra_analyses_remaining && billing.extra_analyses_remaining > 0 ? (
                               <p className="text-xs text-green-600">✓ Você tem {billing.extra_analyses_remaining} análise{billing.extra_analyses_remaining > 1 ? "s" : ""} avulsa{billing.extra_analyses_remaining > 1 ? "s" : ""} disponível{billing.extra_analyses_remaining > 1 ? "is" : ""}.</p>
                             ) : (
-                              <Button
-                                size="sm"
-                                className="text-xs"
-                                onClick={async () => {
-                                  const qty = prompt("Quantas análises avulsas deseja comprar?", "10");
-                                  if (!qty) return;
-                                  const r = await apiFetch("/api/admin/billing/buy-analyses", {
-                                    method: "POST",
-                                    body: JSON.stringify({ quantity: Number(qty) }),
-                                  });
-                                  const data = await r.json();
-                                  if (data.checkout_url) window.location.href = data.checkout_url;
-                                  else alert(data.error || "Erro ao gerar checkout.");
-                                }}
-                              >
+                              <Button size="sm" className="text-xs" onClick={() => setBuyOpen(true)}>
                                 Comprar análises avulsas (R$ {((billing.extra_analysis_price_cents || 990) / 100).toFixed(2)}/cada)
                               </Button>
                             )}
@@ -1119,20 +1109,7 @@ export default function AdminPage() {
                           <Button variant="outline" size="sm" onClick={() => setUpgradeOpen(true)}>
                             Fazer upgrade
                           </Button>
-                          <Button
-                            size="sm"
-                            onClick={async () => {
-                              const qty = prompt("Quantas análises avulsas?", "10");
-                              if (!qty) return;
-                              const r = await apiFetch("/api/admin/billing/buy-analyses", {
-                                method: "POST",
-                                body: JSON.stringify({ quantity: Number(qty) }),
-                              });
-                              const data = await r.json();
-                              if (data.checkout_url) window.location.href = data.checkout_url;
-                              else alert(data.error || "Erro.");
-                            }}
-                          >
+                          <Button size="sm" onClick={() => setBuyOpen(true)}>
                             Comprar análises avulsas
                           </Button>
                         </div>
@@ -1301,6 +1278,101 @@ export default function AdminPage() {
           </Tabs>
         )}
       </main>
+
+      {/* ── Buy Analyses Modal ── */}
+      <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Comprar análises avulsas</DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const price = (billing?.extra_analysis_price_cents || 990) / 100;
+            const total = price * buyQty;
+            return (
+              <div className="space-y-6 py-2">
+                {/* Quantity display */}
+                <div className="text-center">
+                  <p className="text-5xl font-bold" style={{ color: "#D99C94" }}>{buyQty}</p>
+                  <p className="text-sm text-muted-foreground mt-1">análises</p>
+                </div>
+
+                {/* Slider */}
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min={1}
+                    max={100}
+                    value={buyQty}
+                    onChange={(e) => setBuyQty(Number(e.target.value))}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, #D99C94 ${buyQty}%, #e5e7eb ${buyQty}%)`,
+                    }}
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>1</span>
+                    <span>25</span>
+                    <span>50</span>
+                    <span>75</span>
+                    <span>100</span>
+                  </div>
+                </div>
+
+                {/* Quick buttons */}
+                <div className="flex gap-2 justify-center">
+                  {[5, 10, 25, 50, 100].map((n) => (
+                    <Button
+                      key={n}
+                      variant={buyQty === n ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setBuyQty(n)}
+                    >
+                      {n}
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Price breakdown */}
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-4 pb-3 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>{buyQty}x análise avulsa</span>
+                      <span>R$ {price.toFixed(2)} cada</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                      <span>Total</span>
+                      <span style={{ color: "#D99C94" }}>R$ {total.toFixed(2)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Buy button */}
+                <Button
+                  className="w-full py-6 text-base font-semibold"
+                  disabled={buyLoading}
+                  onClick={async () => {
+                    setBuyLoading(true);
+                    const r = await apiFetch("/api/admin/billing/buy-analyses", {
+                      method: "POST",
+                      body: JSON.stringify({ quantity: buyQty }),
+                    });
+                    const data = await r.json();
+                    setBuyLoading(false);
+                    if (data.checkout_url) {
+                      window.location.href = data.checkout_url;
+                    } else {
+                      alert(data.error || "Erro ao gerar checkout.");
+                    }
+                  }}
+                >
+                  {buyLoading ? "Gerando pagamento…" : `Pagar R$ ${total.toFixed(2)}`}
+                </Button>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
