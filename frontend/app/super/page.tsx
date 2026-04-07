@@ -107,6 +107,9 @@ export default function SuperAdminPage() {
   // Active tab
   const [activeTab, setActiveTab] = useState("dashboard");
 
+  // Dashboard period filter
+  const [dashPeriod, setDashPeriod] = useState("30");
+
   // Expanded analysis in usage tab
   const [expandedAnalysis, setExpandedAnalysis] = useState<string | null>(null);
 
@@ -160,8 +163,9 @@ export default function SuperAdminPage() {
     setAuthed(false);
   }
 
-  async function loadOverview() {
-    const r = await apiFetch("/api/super/overview");
+  async function loadOverview(period?: string) {
+    const days = period || dashPeriod;
+    const r = await apiFetch(`/api/super/overview?days=${days}`);
     if (!r.ok) return;
     const raw = await r.json();
     // Sanitize: some API values are objects, extract primitives
@@ -356,14 +360,29 @@ export default function SuperAdminPage() {
 
           {/* ── Dashboard ── */}
           <TabsContent value="dashboard">
-            <h1 className="text-2xl font-bold text-[#3A3330] mb-6">Dashboard</h1>
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold text-[#3A3330]">Dashboard</h1>
+              <Select value={dashPeriod} onValueChange={(v) => { setDashPeriod(v); loadOverview(v); }}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">Últimos 7 dias</SelectItem>
+                  <SelectItem value="15">Últimos 15 dias</SelectItem>
+                  <SelectItem value="30">Últimos 30 dias</SelectItem>
+                  <SelectItem value="60">Últimos 60 dias</SelectItem>
+                  <SelectItem value="90">Últimos 90 dias</SelectItem>
+                  <SelectItem value="365">Último ano</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
               {[
-                { label: "Análises (30d)", value: overview?.analyses_this_month, color: "#D99C94" },
+                { label: `Análises (${dashPeriod}d)`, value: overview?.analyses_period, color: "#D99C94" },
                 { label: "Clínicas ativas", value: overview?.active_clinics, color: "#22c55e" },
                 { label: "Total clínicas", value: overview?.total_clinics, color: "#3b82f6" },
                 { label: "MRR", value: overview?.mrr_cents ? `R$ ${(Number(overview.mrr_cents) / 100).toFixed(0)}` : null, color: "#8b5cf6" },
-                { label: "Custo/mês", value: overview?.cost_this_month_cents ? `R$ ${(Number(overview.cost_this_month_cents) / 100).toFixed(2)}` : null, color: "#f97316" },
+                { label: `Custo (${dashPeriod}d)`, value: overview?.cost_period_cents ? `R$ ${(Number(overview.cost_period_cents) / 100).toFixed(2)}` : null, color: "#f97316" },
                 { label: "Inadimplentes", value: overview?.past_due_clinics, color: "#ef4444" },
               ].map((m) => (
                 <Card key={m.label}>
@@ -376,7 +395,7 @@ export default function SuperAdminPage() {
             </div>
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Análises — últimos 30 dias</CardTitle>
+                <CardTitle className="text-base">Análises — últimos {dashPeriod} dias</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>

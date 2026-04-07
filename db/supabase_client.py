@@ -191,29 +191,30 @@ def get_clinic_usage_stats(clinic_id: str, period: str = "month") -> dict:
     }
 
 
-def get_super_admin_overview() -> dict:
+def get_super_admin_overview(days: int = 30) -> dict:
     """Retorna visão geral do SaaS para o super admin."""
     db = get_db()
 
     now = datetime.now(timezone.utc)
+    period_start = (now - timedelta(days=days)).isoformat()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
 
     # Total de clínicas ativas
     active = db.table("clinics").select("id", count="exact").eq("status", "active").execute()
 
-    # Análises do mês
+    # Análises do período
     analyses = (
         db.table("analyses")
         .select("id", count="exact")
-        .gte("created_at", month_start)
+        .gte("created_at", period_start)
         .execute()
     )
 
-    # Custo do mês
+    # Custo do período
     costs = (
         db.table("usage_events")
         .select("cost_cents")
-        .gte("created_at", month_start)
+        .gte("created_at", period_start)
         .execute()
     )
     total_cost = sum(float(r["cost_cents"]) for r in (costs.data or []))
@@ -241,32 +242,30 @@ def get_super_admin_overview() -> dict:
     # Total de clínicas (todas)
     total = db.table("clinics").select("id", count="exact").execute()
 
-    # Chart: análises por dia dos últimos 30 dias
-    thirty_days_ago = (now - timedelta(days=30)).isoformat()
+    # Chart: análises por dia no período
     chart_raw = (
         db.table("analyses")
         .select("created_at")
-        .gte("created_at", thirty_days_ago)
+        .gte("created_at", period_start)
         .execute()
     )
-    # Agrupar por dia
     from collections import Counter
     day_counts: Counter[str] = Counter()
     for row in chart_raw.data or []:
-        day = row["created_at"][:10]  # "2026-04-06"
+        day = row["created_at"][:10]
         day_counts[day] += 1
-    # Gerar array com todos os 30 dias
     chart_data = []
-    for i in range(30):
-        d = now - timedelta(days=29 - i)
+    for i in range(days):
+        d = now - timedelta(days=days - 1 - i)
         ds = d.strftime("%Y-%m-%d")
         chart_data.append({"date": ds, "count": day_counts.get(ds, 0)})
 
     return {
         "active_clinics": active.count or 0,
         "total_clinics": total.count or 0,
-        "analyses_this_month": analyses.count or 0,
-        "cost_this_month_cents": round(total_cost, 2),
+        "analyses_period": analyses.count or 0,
+        "cost_period_cents": round(total_cost, 2),
+        "days": days,
         "mrr_cents": mrr,
         "past_due_clinics": past_due.count or 0,
         "chart_data": chart_data,
