@@ -499,6 +499,43 @@ async def super_overview(user_id: str = Depends(require_super_admin)):
     return get_super_admin_overview()
 
 
+@app.get("/api/super/model-costs")
+async def super_get_model_costs(user_id: str = Depends(require_super_admin)):
+    """Retorna configurações de custo dos modelos de IA."""
+    from tools.cost_tracker import (
+        GEMINI_INPUT_PRICE_PER_1M_USD,
+        GEMINI_OUTPUT_PRICE_PER_1M_USD,
+        MOONDREAM_PRICE_PER_CALL_USD,
+        USD_TO_BRL,
+    )
+    return {
+        "gemini_input_per_1m_usd": str(GEMINI_INPUT_PRICE_PER_1M_USD),
+        "gemini_output_per_1m_usd": str(GEMINI_OUTPUT_PRICE_PER_1M_USD),
+        "moondream_per_call_usd": str(MOONDREAM_PRICE_PER_CALL_USD),
+        "usd_to_brl": str(USD_TO_BRL),
+    }
+
+
+@app.post("/api/super/model-costs")
+async def super_update_model_costs(request: Request, user_id: str = Depends(require_super_admin)):
+    """Atualiza configurações de custo dos modelos de IA."""
+    import tools.cost_tracker as ct
+    from decimal import Decimal
+
+    body = await request.json()
+
+    if "gemini_input_per_1m_usd" in body:
+        ct.GEMINI_INPUT_PRICE_PER_1M_USD = Decimal(str(body["gemini_input_per_1m_usd"]))
+    if "gemini_output_per_1m_usd" in body:
+        ct.GEMINI_OUTPUT_PRICE_PER_1M_USD = Decimal(str(body["gemini_output_per_1m_usd"]))
+    if "moondream_per_call_usd" in body:
+        ct.MOONDREAM_PRICE_PER_CALL_USD = Decimal(str(body["moondream_per_call_usd"]))
+    if "usd_to_brl" in body:
+        ct.USD_TO_BRL = Decimal(str(body["usd_to_brl"]))
+
+    return {"ok": True}
+
+
 @app.get("/api/super/plans")
 async def super_list_plans(user_id: str = Depends(require_super_admin)):
     """Lista planos disponíveis."""

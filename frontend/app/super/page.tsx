@@ -102,6 +102,11 @@ export default function SuperAdminPage() {
   // Active tab
   const [activeTab, setActiveTab] = useState("dashboard");
 
+  // Model costs
+  const [modelCosts, setModelCosts] = useState<Record<string, string>>({});
+  const [costsSaving, setCostsSaving] = useState(false);
+  const [costsMsg, setCostsMsg] = useState("");
+
   // Filters
   const [clinicFilter, setClinicFilter] = useState("all");
   const [clinicSearch, setClinicSearch] = useState("");
@@ -178,6 +183,23 @@ export default function SuperAdminPage() {
   async function loadUsage() {
     const r = await apiFetch("/api/super/usage");
     if (r.ok) setUsage(await r.json());
+  }
+
+  async function loadModelCosts() {
+    const r = await apiFetch("/api/super/model-costs");
+    if (r.ok) setModelCosts(await r.json());
+  }
+
+  async function saveModelCosts() {
+    setCostsSaving(true);
+    setCostsMsg("");
+    const r = await apiFetch("/api/super/model-costs", {
+      method: "POST",
+      body: JSON.stringify(modelCosts),
+    });
+    setCostsSaving(false);
+    setCostsMsg(r.ok ? "Salvo!" : "Erro ao salvar.");
+    setTimeout(() => setCostsMsg(""), 3000);
   }
 
   async function loadInvoices() {
@@ -287,6 +309,7 @@ export default function SuperAdminPage() {
             ["uso", "📈 Uso & Custos"],
             ["financeiro", "💳 Financeiro"],
             ["planos", "📦 Planos"],
+            ["config", "⚙️ Configurações"],
           ] as const).map(([tab, label]) => (
             <button
               key={tab}
@@ -295,6 +318,7 @@ export default function SuperAdminPage() {
                 if (tab === "uso") loadUsage();
                 if (tab === "financeiro") loadInvoices();
                 if (tab === "planos") loadPlans();
+                if (tab === "config") loadModelCosts();
               }}
               className={`w-full text-left px-5 py-2.5 text-sm transition-colors ${
                 activeTab === tab
@@ -317,7 +341,7 @@ export default function SuperAdminPage() {
       <main className="ml-56 flex-1 p-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="hidden">
-            {["dashboard", "clinicas", "uso", "financeiro", "planos"].map((t) => (
+            {["dashboard", "clinicas", "uso", "financeiro", "planos", "config"].map((t) => (
               <TabsTrigger key={t} value={t} />
             ))}
           </TabsList>
@@ -700,6 +724,124 @@ export default function SuperAdminPage() {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* ── Configurações ── */}
+          <TabsContent value="config">
+            <div className="max-w-2xl space-y-6">
+              <h1 className="text-2xl font-bold text-[#3A3330]">Configurações de Custos</h1>
+              <p className="text-sm text-muted-foreground">
+                Configure os preços dos modelos de IA usados nas análises. Os valores são usados para calcular o custo de cada análise.
+              </p>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Gemini 2.0 Flash Lite</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Preço input / 1M tokens (USD)</Label>
+                      <Input
+                        type="number"
+                        step="0.001"
+                        value={modelCosts.gemini_input_per_1m_usd || ""}
+                        onChange={(e) => setModelCosts({ ...modelCosts, gemini_input_per_1m_usd: e.target.value })}
+                        placeholder="0.075"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Preço output / 1M tokens (USD)</Label>
+                      <Input
+                        type="number"
+                        step="0.001"
+                        value={modelCosts.gemini_output_per_1m_usd || ""}
+                        onChange={(e) => setModelCosts({ ...modelCosts, gemini_output_per_1m_usd: e.target.value })}
+                        placeholder="0.300"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Moondream3 (FAL AI)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1 max-w-xs">
+                    <Label className="text-xs">Preço por chamada (USD)</Label>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={modelCosts.moondream_per_call_usd || ""}
+                      onChange={(e) => setModelCosts({ ...modelCosts, moondream_per_call_usd: e.target.value })}
+                      placeholder="0.003"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Câmbio USD → BRL</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1 max-w-xs">
+                    <Label className="text-xs">Taxa de conversão (1 USD = X BRL)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={modelCosts.usd_to_brl || ""}
+                      onChange={(e) => setModelCosts({ ...modelCosts, usd_to_brl: e.target.value })}
+                      placeholder="5.10"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Cost simulation */}
+              {modelCosts.gemini_input_per_1m_usd && (
+                <Card className="bg-[#F5F0EB]">
+                  <CardHeader>
+                    <CardTitle className="text-base">Simulação de custo por análise</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm space-y-1">
+                    {(() => {
+                      const gin = Number(modelCosts.gemini_input_per_1m_usd || 0);
+                      const gout = Number(modelCosts.gemini_output_per_1m_usd || 0);
+                      const moon = Number(modelCosts.moondream_per_call_usd || 0);
+                      const fx = Number(modelCosts.usd_to_brl || 5.1);
+                      // Média estimada: ~3000 tokens in, ~2000 out, ~7 moondream calls
+                      const geminiUsd = (3000 / 1_000_000) * gin + (2000 / 1_000_000) * gout;
+                      const moonUsd = 7 * moon;
+                      const totalBrl = (geminiUsd + moonUsd) * fx;
+                      return (
+                        <>
+                          <p>Gemini (3k in / 2k out): <strong>US$ {geminiUsd.toFixed(6)}</strong></p>
+                          <p>Moondream (7 calls): <strong>US$ {moonUsd.toFixed(4)}</strong></p>
+                          <p>Total USD: <strong>US$ {(geminiUsd + moonUsd).toFixed(4)}</strong></p>
+                          <p className="text-base font-bold mt-2" style={{ color: "#D99C94" }}>
+                            ≈ R$ {totalBrl.toFixed(4)} por análise
+                          </p>
+                        </>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="flex items-center gap-3">
+                <Button onClick={saveModelCosts} disabled={costsSaving}>
+                  {costsSaving ? "Salvando…" : "Salvar configurações"}
+                </Button>
+                {costsMsg && (
+                  <span className={`text-sm ${costsMsg === "Salvo!" ? "text-green-600" : "text-red-600"}`}>
+                    {costsMsg}
+                  </span>
+                )}
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </main>
