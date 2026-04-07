@@ -659,17 +659,18 @@ export default function SuperAdminPage() {
                                   const msg = `✨ *${c.name}* — Análise de Pele com IA\n\n` +
                                     `Acesse: ${url}\n\n` +
                                     `📲 *Instalar como aplicativo:*\n\n` +
-                                    `*iPhone (Safari):*\n` +
-                                    `1. Abra o link acima no Safari\n` +
-                                    `2. Toque no ícone de compartilhar (⬆️)\n` +
-                                    `3. Toque em "Adicionar à Tela de Início"\n` +
-                                    `4. Confirme tocando "Adicionar"\n\n` +
-                                    `*Android (Chrome):*\n` +
-                                    `1. Abra o link acima no Chrome\n` +
-                                    `2. Toque no menu (⋮) no canto superior\n` +
-                                    `3. Toque em "Instalar aplicativo"\n` +
+                                    `*iPhone:*\n` +
+                                    `⚠️ No iPhone, só funciona pelo *Safari*. Se você usa Chrome, copie o link e abra no Safari.\n` +
+                                    `1. Abra o link acima no *Safari*\n` +
+                                    `2. Toque no ícone de compartilhar (⬆️) na barra inferior\n` +
+                                    `3. Role e toque em *"Adicionar à Tela de Início"*\n` +
+                                    `4. Toque em *"Adicionar"*\n\n` +
+                                    `*Android:*\n` +
+                                    `1. Abra o link acima no *Chrome*\n` +
+                                    `2. Toque no menu (⋮) no canto superior direito\n` +
+                                    `3. Toque em *"Instalar aplicativo"*\n` +
                                     `4. Confirme a instalação\n\n` +
-                                    `Após instalar, o app abre em tela cheia como um aplicativo nativo! 🎉`;
+                                    `Após instalar, o app abre em tela cheia como se fosse um aplicativo da loja! 🎉`;
                                   navigator.clipboard.writeText(msg);
                                   alert("Mensagem com instruções de instalação copiada!");
                                 }}
