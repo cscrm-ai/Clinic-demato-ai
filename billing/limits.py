@@ -47,12 +47,20 @@ def check_quota(clinic: dict) -> QuotaResult:
     if monthly_limit is None:
         return True, "ok", current_count, None
 
-    # Limite atingido
+    # Limite atingido — verifica se tem análises avulsas
     if current_count >= monthly_limit:
+        extra_purchased = clinic.get("extra_analyses_purchased", 0) or 0
+        extra_used = clinic.get("extra_analyses_used", 0) or 0
+        extra_remaining = extra_purchased - extra_used
+
+        if extra_remaining > 0:
+            # Tem análise avulsa disponível — permitir e marcar como usada
+            return True, "extra", current_count, monthly_limit
+
         return (
             False,
             f"Limite mensal de {monthly_limit} análises atingido "
-            f"({current_count}/{monthly_limit}). Faça upgrade para continuar.",
+            f"({current_count}/{monthly_limit}). Compre análises avulsas ou faça upgrade.",
             current_count,
             monthly_limit,
         )

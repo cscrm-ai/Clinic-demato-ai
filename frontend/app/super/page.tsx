@@ -1100,6 +1100,21 @@ export default function SuperAdminPage() {
                           }}
                         />
                       </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Análise avulsa (R$)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="9.90"
+                          value={((p as Record<string, unknown>).extra_analysis_price_cents as number || 990) / 100}
+                          className="h-9"
+                          onChange={(e) => {
+                            const updated = [...plans];
+                            (updated[idx] as Record<string, unknown>).extra_analysis_price_cents = Math.round(Number(e.target.value) * 100);
+                            setPlans(updated);
+                          }}
+                        />
+                      </div>
                       <Button
                         size="sm"
                         className="h-9"
@@ -1110,6 +1125,7 @@ export default function SuperAdminPage() {
                               name: p.name,
                               price_cents: p.price_cents,
                               monthly_analyses_limit: p.monthly_analyses_limit,
+                              extra_analysis_price_cents: (p as Record<string, unknown>).extra_analysis_price_cents ?? 990,
                             }),
                           });
                           alert(`Plano "${p.name}" salvo!`);

@@ -137,6 +137,7 @@ async def analyze(request: Request, image: UploadFile = File(...)):
                 base_domain = os.environ.get("APP_BASE_DOMAIN", "cscrm.ai")
                 subdomain   = clinic.get("subdomain", "")
                 upgrade_url = f"https://{subdomain}.{base_domain}/admin#billing"
+                plan = clinic.get("plans") or {}
                 return JSONResponse(
                     status_code=402,
                     content={
@@ -144,8 +145,18 @@ async def analyze(request: Request, image: UploadFile = File(...)):
                         "current":     current,
                         "limit":       limit,
                         "upgrade_url": upgrade_url,
+                        "extra_analysis_price_cents": plan.get("extra_analysis_price_cents", 990),
                     },
                 )
+            # Se usou análise avulsa, incrementar contador
+            if reason == "extra":
+                try:
+                    db = get_db()
+                    db.table("clinics").update({
+                        "extra_analyses_used": (clinic.get("extra_analyses_used", 0) or 0) + 1
+                    }).eq("id", str(clinic["id"])).execute()
+                except Exception:
+                    pass
         except ImportError:
             pass  # billing ainda não disponível (fases iniciais)
 
@@ -383,6 +394,9 @@ async def admin_billing_status(
     usage  = get_clinic_usage_stats(str(clinic["id"]), period="month")
     plan   = clinic.get("plans") or {}
 
+    extra_purchased = clinic.get("extra_analyses_purchased", 0) or 0
+    extra_used = clinic.get("extra_analyses_used", 0) or 0
+
     return {
         "plan_name":            plan.get("name", "Free"),
         "monthly_limit":        plan.get("monthly_analyses_limit"),
@@ -392,6 +406,10 @@ async def admin_billing_status(
         "current_period_end":   clinic.get("current_period_end"),
         "cancel_at_period_end": clinic.get("cancel_at_period_end", False),
         "trial_ends_at":        clinic.get("trial_ends_at"),
+        "extra_analysis_price_cents": plan.get("extra_analysis_price_cents", 990),
+        "extra_analyses_purchased": extra_purchased,
+        "extra_analyses_used": extra_used,
+        "extra_analyses_remaining": extra_purchased - extra_used,
     }
 
 
@@ -431,6 +449,57 @@ async def admin_billing_checkout(
 
     checkout_url = create_checkout_session(clinic, plan, success_url, cancel_url)
     return {"checkout_url": checkout_url}
+
+
+@app.post("/api/admin/billing/buy-analyses")
+async def admin_buy_analyses(
+    request: Request,
+    user_id: str = Depends(require_clinic_admin),
+):
+    """Gera checkout Stripe para comprar pacote de análises avulsas."""
+    clinic = request.state.clinic
+    body = await request.json()
+    quantity = int(body.get("quantity", 10))
+    plan = clinic.get("plans") or {}
+    price_per = plan.get("extra_analysis_price_cents", 990)
+    total = price_per * quantity
+
+    try:
+        import stripe
+        base_domain = os.environ.get("APP_BASE_DOMAIN", "allbele.app")
+        subdomain = clinic["subdomain"]
+
+        params: dict = {
+            "mode": "payment",
+            "line_items": [{
+                "price_data": {
+                    "currency": "brl",
+                    "unit_amount": price_per,
+                    "product_data": {
+                        "name": f"Pacote de {quantity} análises avulsas",
+                        "description": f"R$ {price_per/100:.2f} por análise — {clinic.get('name', '')}",
+                    },
+                },
+                "quantity": quantity,
+            }],
+            "success_url": f"https://{subdomain}.{base_domain}/admin?buy=success&qty={quantity}",
+            "cancel_url": f"https://{subdomain}.{base_domain}/admin#billing",
+            "metadata": {
+                "clinic_id": str(clinic["id"]),
+                "type": "extra_analyses",
+                "quantity": str(quantity),
+            },
+        }
+        cust = clinic.get("stripe_customer_id")
+        if cust:
+            params["customer"] = cust
+        else:
+            params["customer_email"] = clinic.get("owner_email", "")
+
+        session = stripe.checkout.Session.create(**params)
+        return {"checkout_url": session.url, "total_cents": total}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 @app.post("/api/admin/billing/portal")
@@ -571,7 +640,7 @@ async def super_update_plan(
     """Atualiza um plano existente."""
     db = get_db()
     body = await request.json()
-    allowed = {"name", "price_cents", "monthly_analyses_limit", "features"}
+    allowed = {"name", "price_cents", "monthly_analyses_limit", "extra_analysis_price_cents", "features"}
     patch = {k: v for k, v in body.items() if k in allowed}
     if not patch:
         return JSONResponse(status_code=400, content={"error": "Nenhum campo válido."})

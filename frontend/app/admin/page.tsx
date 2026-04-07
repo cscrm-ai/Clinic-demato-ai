@@ -20,6 +20,10 @@ interface BillingStatus {
   current_period_end?: string;
   trial_end?: string;
   invoices: Invoice[];
+  extra_analysis_price_cents?: number;
+  extra_analyses_purchased?: number;
+  extra_analyses_used?: number;
+  extra_analyses_remaining?: number;
 }
 
 // ─── Analysis record ─────────────────────────────────────────────────────────
@@ -613,7 +617,30 @@ export default function AdminPage() {
                           />
                         </div>
                         {((billing.analyses_this_month ?? 0) / billing.monthly_limit) > 0.8 && (
-                          <p className="text-xs text-red-500">⚠️ Você está perto do limite. Considere fazer upgrade.</p>
+                          <div className="space-y-2">
+                            <p className="text-xs text-red-500">⚠️ Você está perto do limite.</p>
+                            {billing.extra_analyses_remaining && billing.extra_analyses_remaining > 0 ? (
+                              <p className="text-xs text-green-600">✓ Você tem {billing.extra_analyses_remaining} análise{billing.extra_analyses_remaining > 1 ? "s" : ""} avulsa{billing.extra_analyses_remaining > 1 ? "s" : ""} disponível{billing.extra_analyses_remaining > 1 ? "is" : ""}.</p>
+                            ) : (
+                              <Button
+                                size="sm"
+                                className="text-xs"
+                                onClick={async () => {
+                                  const qty = prompt("Quantas análises avulsas deseja comprar?", "10");
+                                  if (!qty) return;
+                                  const r = await apiFetch("/api/admin/billing/buy-analyses", {
+                                    method: "POST",
+                                    body: JSON.stringify({ quantity: Number(qty) }),
+                                  });
+                                  const data = await r.json();
+                                  if (data.checkout_url) window.location.href = data.checkout_url;
+                                  else alert(data.error || "Erro ao gerar checkout.");
+                                }}
+                              >
+                                Comprar análises avulsas (R$ {((billing.extra_analysis_price_cents || 990) / 100).toFixed(2)}/cada)
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </>
                     ) : (
@@ -1088,11 +1115,50 @@ export default function AdminPage() {
                             />
                           </div>
                         )}
-                        <Button variant="outline" size="sm" onClick={() => setUpgradeOpen(true)}>
-                          Fazer upgrade
-                        </Button>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button variant="outline" size="sm" onClick={() => setUpgradeOpen(true)}>
+                            Fazer upgrade
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              const qty = prompt("Quantas análises avulsas?", "10");
+                              if (!qty) return;
+                              const r = await apiFetch("/api/admin/billing/buy-analyses", {
+                                method: "POST",
+                                body: JSON.stringify({ quantity: Number(qty) }),
+                              });
+                              const data = await r.json();
+                              if (data.checkout_url) window.location.href = data.checkout_url;
+                              else alert(data.error || "Erro.");
+                            }}
+                          >
+                            Comprar análises avulsas
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
+
+                    {/* Análises avulsas */}
+                    {(billing.extra_analyses_purchased ?? 0) > 0 && (
+                      <Card>
+                        <CardContent className="pt-6 space-y-2">
+                          <h3 className="text-sm font-semibold">Análises avulsas</h3>
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Compradas</span>
+                            <span className="font-mono">{billing.extra_analyses_purchased}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Usadas</span>
+                            <span className="font-mono">{billing.extra_analyses_used ?? 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm font-semibold">
+                            <span>Restantes</span>
+                            <span className="font-mono text-green-600">{billing.extra_analyses_remaining ?? 0}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
 
                     {billing.invoices?.length > 0 && (
                         <Card>

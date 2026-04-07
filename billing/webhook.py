@@ -151,6 +151,21 @@ def _handle_checkout_completed(session: dict) -> dict:
         _invalidate_cache(clinic_id)
         return {"clinic_id": clinic_id, "type": "setup_fee", "status": "paid"}
 
+    # Extra analyses purchase (one-time)
+    if fee_type == "extra_analyses":
+        quantity = int(metadata.get("quantity", 0))
+        if quantity > 0:
+            from db.supabase_client import get_clinic_by_id
+            clinic = get_clinic_by_id(clinic_id)
+            current = (clinic or {}).get("extra_analyses_purchased", 0) or 0
+            update_clinic(clinic_id, {
+                "extra_analyses_purchased": current + quantity,
+            })
+        if customer_id:
+            update_clinic(clinic_id, {"stripe_customer_id": customer_id})
+        _invalidate_cache(clinic_id)
+        return {"clinic_id": clinic_id, "type": "extra_analyses", "quantity": quantity}
+
     # Subscription checkout
     patch: dict = {}
     if sub_id:
