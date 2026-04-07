@@ -603,7 +603,7 @@ export default function SuperAdminPage() {
                         cy="50%"
                         outerRadius={90}
                         innerRadius={50}
-                        label={(props: Record<string, unknown>) => `${props.name} ${((props.percent as number) * 100).toFixed(0)}%`}
+                        label
                       >
                         {(overview.clinic_chart as { name: string }[]).map((_: unknown, i: number) => (
                           <Cell key={i} fill={["#D99C94", "#8b5cf6", "#22c55e", "#f59e0b", "#0ea5e9", "#ef4444", "#ec4899"][i % 7]} />
