@@ -785,7 +785,8 @@ export default function SuperAdminPage() {
                             <div className="p-4 border-t">
                               {detailLoading && <p className="text-xs text-muted-foreground">Carregando resultado…</p>}
                               {analysisDetail && expandedAnalysis === analysisId && ((): React.ReactNode => {
-                                const d = analysisDetail as Record<string, unknown>;
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                const d = analysisDetail as any;
                                 const findings = Array.isArray(d.findings) ? d.findings as { description: string; zone?: string; priority?: string; conduta?: string; x_point?: number; y_point?: number; procedimentos_indicados?: { nome: string; sessoes_estimadas?: string }[] }[] : [];
                                 const plan = d.plano_terapeutico as { curto_prazo?: string; medio_prazo?: string; longo_prazo?: string } | null;
                                 return (
