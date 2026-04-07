@@ -109,6 +109,8 @@ export default function SuperAdminPage() {
 
   // Dashboard period filter
   const [dashPeriod, setDashPeriod] = useState("30");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
 
   // Expanded analysis in usage tab
   const [expandedAnalysis, setExpandedAnalysis] = useState<string | null>(null);
@@ -164,8 +166,14 @@ export default function SuperAdminPage() {
   }
 
   async function loadOverview(period?: string) {
-    const days = period || dashPeriod;
-    const r = await apiFetch(`/api/super/overview?days=${days}`);
+    const p = period || dashPeriod;
+    let url: string;
+    if (p.startsWith("custom&")) {
+      url = `/api/super/overview?${p}`;
+    } else {
+      url = `/api/super/overview?days=${p}`;
+    }
+    const r = await apiFetch(url);
     if (!r.ok) return;
     const raw = await r.json();
     // Sanitize: some API values are objects, extract primitives
@@ -362,27 +370,58 @@ export default function SuperAdminPage() {
           <TabsContent value="dashboard">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-bold text-[#3A3330]">Dashboard</h1>
-              <Select value={dashPeriod} onValueChange={(v) => { const val = v ?? "30"; setDashPeriod(val); loadOverview(val); }}>
-                <SelectTrigger className="w-44">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Últimos 7 dias</SelectItem>
-                  <SelectItem value="15">Últimos 15 dias</SelectItem>
-                  <SelectItem value="30">Últimos 30 dias</SelectItem>
-                  <SelectItem value="60">Últimos 60 dias</SelectItem>
-                  <SelectItem value="90">Últimos 90 dias</SelectItem>
-                  <SelectItem value="365">Último ano</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Select value={dashPeriod} onValueChange={(v) => {
+                  const val = v ?? "30";
+                  setDashPeriod(val);
+                  if (val !== "custom") loadOverview(val);
+                }}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Hoje</SelectItem>
+                    <SelectItem value="2">Ontem + Hoje</SelectItem>
+                    <SelectItem value="7">Últimos 7 dias</SelectItem>
+                    <SelectItem value="15">Últimos 15 dias</SelectItem>
+                    <SelectItem value="30">Últimos 30 dias</SelectItem>
+                    <SelectItem value="60">Últimos 60 dias</SelectItem>
+                    <SelectItem value="90">Últimos 90 dias</SelectItem>
+                    <SelectItem value="365">Último ano</SelectItem>
+                    <SelectItem value="custom">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+                {dashPeriod === "custom" && (
+                  <>
+                    <Input
+                      type="date"
+                      value={customFrom}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="w-36 h-9 text-xs"
+                    />
+                    <span className="text-xs text-muted-foreground">até</span>
+                    <Input
+                      type="date"
+                      value={customTo}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="w-36 h-9 text-xs"
+                    />
+                    <Button size="sm" className="h-9" onClick={() => {
+                      if (customFrom && customTo) {
+                        loadOverview(`custom&from=${customFrom}&to=${customTo}`);
+                      }
+                    }}>Aplicar</Button>
+                  </>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
               {[
-                { label: `Análises (${dashPeriod}d)`, value: overview?.analyses_period, color: "#D99C94" },
+                { label: dashPeriod === "custom" ? `Análises (${customFrom} a ${customTo})` : dashPeriod === "1" ? "Análises (hoje)" : `Análises (${dashPeriod}d)`, value: overview?.analyses_period, color: "#D99C94" },
                 { label: "Clínicas ativas", value: overview?.active_clinics, color: "#22c55e" },
                 { label: "Total clínicas", value: overview?.total_clinics, color: "#3b82f6" },
                 { label: "MRR", value: overview?.mrr_cents ? `R$ ${(Number(overview.mrr_cents) / 100).toFixed(0)}` : null, color: "#8b5cf6" },
-                { label: `Custo (${dashPeriod}d)`, value: overview?.cost_period_cents ? `R$ ${(Number(overview.cost_period_cents) / 100).toFixed(2)}` : null, color: "#f97316" },
+                { label: dashPeriod === "custom" ? "Custo (período)" : dashPeriod === "1" ? "Custo (hoje)" : `Custo (${dashPeriod}d)`, value: overview?.cost_period_cents ? `R$ ${(Number(overview.cost_period_cents) / 100).toFixed(2)}` : null, color: "#f97316" },
                 { label: "Inadimplentes", value: overview?.past_due_clinics, color: "#ef4444" },
               ].map((m) => (
                 <Card key={m.label}>

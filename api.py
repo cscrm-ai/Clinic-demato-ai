@@ -494,9 +494,15 @@ async def auth_logout():
 
 
 @app.get("/api/super/overview")
-async def super_overview(days: int = 30, user_id: str = Depends(require_super_admin)):
+async def super_overview(
+    days: int = 30,
+    user_id: str = Depends(require_super_admin),
+    request: Request = None,
+):
     """MRR, análises/período, custo/período, inadimplência."""
-    return get_super_admin_overview(days=days)
+    from_date = request.query_params.get("from") if request else None
+    to_date = request.query_params.get("to") if request else None
+    return get_super_admin_overview(days=days, from_date=from_date, to_date=to_date)
 
 
 @app.get("/api/super/model-costs")

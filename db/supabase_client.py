@@ -191,32 +191,41 @@ def get_clinic_usage_stats(clinic_id: str, period: str = "month") -> dict:
     }
 
 
-def get_super_admin_overview(days: int = 30) -> dict:
+def get_super_admin_overview(days: int = 30, from_date: str | None = None, to_date: str | None = None) -> dict:
     """Retorna visão geral do SaaS para o super admin."""
     db = get_db()
 
     now = datetime.now(timezone.utc)
-    period_start = (now - timedelta(days=days)).isoformat()
+
+    # Custom date range or days-based
+    if from_date and to_date:
+        period_start = f"{from_date}T00:00:00+00:00"
+        period_end = f"{to_date}T23:59:59+00:00"
+        # Calculate days for chart
+        from datetime import date as _date
+        d1 = _date.fromisoformat(from_date)
+        d2 = _date.fromisoformat(to_date)
+        days = max((d2 - d1).days + 1, 1)
+    else:
+        period_start = (now - timedelta(days=days)).isoformat()
+        period_end = None
+
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
 
     # Total de clínicas ativas
     active = db.table("clinics").select("id", count="exact").eq("status", "active").execute()
 
     # Análises do período
-    analyses = (
-        db.table("analyses")
-        .select("id", count="exact")
-        .gte("created_at", period_start)
-        .execute()
-    )
+    aq = db.table("analyses").select("id", count="exact").gte("created_at", period_start)
+    if period_end:
+        aq = aq.lte("created_at", period_end)
+    analyses = aq.execute()
 
     # Custo do período
-    costs = (
-        db.table("usage_events")
-        .select("cost_cents")
-        .gte("created_at", period_start)
-        .execute()
-    )
+    cq = db.table("usage_events").select("cost_cents").gte("created_at", period_start)
+    if period_end:
+        cq = cq.lte("created_at", period_end)
+    costs = cq.execute()
     total_cost = sum(float(r["cost_cents"]) for r in (costs.data or []))
 
     # MRR: soma price_cents das clínicas ativas com subscription ativa
@@ -243,22 +252,28 @@ def get_super_admin_overview(days: int = 30) -> dict:
     total = db.table("clinics").select("id", count="exact").execute()
 
     # Chart: análises por dia no período
-    chart_raw = (
-        db.table("analyses")
-        .select("created_at")
-        .gte("created_at", period_start)
-        .execute()
-    )
+    cq2 = db.table("analyses").select("created_at").gte("created_at", period_start)
+    if period_end:
+        cq2 = cq2.lte("created_at", period_end)
+    chart_raw = cq2.execute()
     from collections import Counter
     day_counts: Counter[str] = Counter()
     for row in chart_raw.data or []:
         day = row["created_at"][:10]
         day_counts[day] += 1
     chart_data = []
-    for i in range(days):
-        d = now - timedelta(days=days - 1 - i)
-        ds = d.strftime("%Y-%m-%d")
-        chart_data.append({"date": ds, "count": day_counts.get(ds, 0)})
+    if from_date and to_date:
+        from datetime import date as _date2
+        start_d = _date2.fromisoformat(from_date)
+        for i in range(days):
+            d = start_d + timedelta(days=i)
+            ds = d.isoformat()
+            chart_data.append({"date": ds, "count": day_counts.get(ds, 0)})
+    else:
+        for i in range(days):
+            d = now - timedelta(days=days - 1 - i)
+            ds = d.strftime("%Y-%m-%d")
+            chart_data.append({"date": ds, "count": day_counts.get(ds, 0)})
 
     return {
         "active_clinics": active.count or 0,
