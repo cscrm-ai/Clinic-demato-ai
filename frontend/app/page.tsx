@@ -64,6 +64,7 @@ export default function PatientPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState("");
   const [videoPopup, setVideoPopup] = useState<string | null>(null);
+  const [showInstall, setShowInstall] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [stepTitle, setStepTitle] = useState(ANALYSIS_STEPS[0].title);
   const [stepDetail, setStepDetail] = useState(ANALYSIS_STEPS[0].detail);
@@ -82,6 +83,13 @@ export default function PatientPage() {
         );
       })
       .catch(() => {});
+
+    // Check if should show PWA install prompt
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches
+      || (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+    if (!isStandalone && !sessionStorage.getItem("pwa-dismissed")) {
+      setTimeout(() => setShowInstall(true), 2000);
+    }
   }, []);
 
   function toEmbedUrl(url: string): string {
@@ -602,6 +610,68 @@ export default function PatientPage() {
           </div>
         </div>
       )}
+
+      {/* PWA Install Banner */}
+      {showInstall && (() => {
+        const ua = navigator.userAgent || "";
+        const isIOS = /iPad|iPhone|iPod/.test(ua);
+        const isSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
+        const isChromeIOS = isIOS && /CriOS/.test(ua);
+        const isAndroid = /Android/.test(ua);
+
+        return (
+          <div
+            className="fixed bottom-0 left-0 right-0 z-40 p-4 pb-6"
+            style={{ background: "linear-gradient(to top, rgba(58,51,48,0.95), rgba(58,51,48,0.85))" }}
+          >
+            <div className="max-w-[400px] mx-auto text-white text-center">
+              <button
+                className="absolute top-2 right-4 text-white/50 hover:text-white text-lg"
+                onClick={() => { setShowInstall(false); sessionStorage.setItem("pwa-dismissed", "1"); }}
+              >
+                ✕
+              </button>
+
+              <p className="text-sm font-semibold mb-2">📲 Instalar como aplicativo</p>
+
+              {isSafari && (
+                <div className="text-xs opacity-80 space-y-1">
+                  <p>Toque no ícone <span className="inline-block mx-1 px-1.5 py-0.5 bg-white/20 rounded text-[11px]">⬆️ Compartilhar</span> abaixo</p>
+                  <p>e depois em <strong>&quot;Adicionar à Tela de Início&quot;</strong></p>
+                  <div className="mt-2 animate-bounce text-xl">↓</div>
+                </div>
+              )}
+
+              {isChromeIOS && (
+                <div className="text-xs opacity-80 space-y-1">
+                  <p>Para instalar como app, abra no <strong>Safari</strong>:</p>
+                  <button
+                    className="mt-2 px-4 py-2 bg-white/20 rounded-full text-xs font-semibold hover:bg-white/30 transition-colors"
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      alert("Link copiado! Cole no Safari para instalar como app.");
+                    }}
+                  >
+                    Copiar link para abrir no Safari
+                  </button>
+                </div>
+              )}
+
+              {isAndroid && (
+                <div className="text-xs opacity-80 space-y-1">
+                  <p>Toque no menu <span className="inline-block mx-1 px-1.5 py-0.5 bg-white/20 rounded text-[11px]">⋮</span> acima</p>
+                  <p>e depois em <strong>&quot;Instalar aplicativo&quot;</strong></p>
+                  <div className="mt-2 animate-bounce text-xl">↑</div>
+                </div>
+              )}
+
+              {!isIOS && !isAndroid && (
+                <p className="text-xs opacity-80">Adicione esta página aos favoritos para acesso rápido!</p>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </main>
   );
 }
