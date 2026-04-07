@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ServiceWorkerRegister } from "./sw-register";
 
 export const metadata: Metadata = {
   title: "allbele.app",
   description: "Análise de pele com IA",
+  manifest: "/manifest.json",
+  themeColor: "#D99C94",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "allbele",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
@@ -14,6 +25,10 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="h-full antialiased">
       <head>
+        {/* PWA */}
+        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         {/* All clinic fonts loaded upfront; active font applied via CSS var */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -28,6 +43,7 @@ export default function RootLayout({
         style={{ fontFamily: "var(--font-main, 'Inter', system-ui, sans-serif)" }}
       >
         {children}
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

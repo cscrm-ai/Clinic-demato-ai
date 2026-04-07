@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="40" fill="#F0EBE3"/>
+  <circle cx="96" cy="80" r="36" fill="none" stroke="#D99C94" stroke-width="5"/>
+  <path d="M70 120 Q96 150 122 120" fill="none" stroke="#D99C94" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="82" cy="74" r="3" fill="#D99C94"/>
+  <circle cx="110" cy="74" r="3" fill="#D99C94"/>
+  <text x="96" y="170" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" font-weight="700" fill="#3A3330">allbele</text>
+</svg>

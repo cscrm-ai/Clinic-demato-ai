@@ -1,0 +1,24 @@
+{
+  "name": "allbele.app — Análise de Pele com IA",
+  "short_name": "allbele",
+  "description": "Tire uma selfie e receba sua análise de pele com inteligência artificial",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F0EBE3",
+  "theme_color": "#D99C94",
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
