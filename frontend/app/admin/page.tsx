@@ -619,9 +619,9 @@ export default function AdminPage() {
                     ) : (
                       <p className="text-sm">Plano ilimitado — sem limite de análises.</p>
                     )}
-                    {billing.subscription_status === "trialing" && billing.trial_ends_at && (
+                    {billing.subscription_status === "trialing" && billing.trial_end && (
                       <p className="text-xs text-muted-foreground mt-2">
-                        Período de teste termina em {new Date(String(billing.trial_ends_at)).toLocaleDateString("pt-BR")}
+                        Período de teste termina em {new Date(String(billing.trial_end)).toLocaleDateString("pt-BR")}
                       </p>
                     )}
                   </CardContent>
