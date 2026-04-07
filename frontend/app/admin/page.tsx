@@ -414,7 +414,7 @@ export default function AdminPage() {
       </aside>
 
       {/* Main content */}
-      <main className="ml-56 flex-1 p-8">
+      <main className="ml-56 flex-1 p-4 md:p-8 overflow-x-hidden">
         {!config ? (
           <p className="text-muted-foreground">Carregando…</p>
         ) : (
@@ -755,7 +755,7 @@ export default function AdminPage() {
 
             {/* ── Procedimentos ── */}
             <TabsContent value="procedimentos">
-              <div className="max-w-4xl space-y-4">
+              <div className="w-full space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h1 className="text-2xl font-bold text-[#3A3330]">Procedimentos</h1>
@@ -795,15 +795,15 @@ export default function AdminPage() {
                 )}
 
                 <Card>
-                  <CardContent className="p-0">
-                    <Table>
+                  <CardContent className="p-0 overflow-x-auto">
+                    <Table className="min-w-[700px]">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead className="w-32">Marca</TableHead>
-                          <TableHead className="w-44">Vídeo (YouTube)</TableHead>
-                          <TableHead className="w-36">Tipo</TableHead>
-                          <TableHead className="w-20 text-center">Ativo</TableHead>
+                          <TableHead className="min-w-[180px]">Nome</TableHead>
+                          <TableHead className="min-w-[100px]">Marca</TableHead>
+                          <TableHead className="min-w-[160px]">Vídeo (YouTube)</TableHead>
+                          <TableHead className="min-w-[130px]">Tipo</TableHead>
+                          <TableHead className="w-16 text-center">Ativo</TableHead>
                           {procs.some((p) => !p.padrao) && (
                             <TableHead className="w-12" />
                           )}
