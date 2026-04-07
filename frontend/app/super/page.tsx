@@ -542,23 +542,44 @@ export default function SuperAdminPage() {
                                 R$ {((c.setup_fee_cents || 0) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}
                               </span>
                               {c.setup_fee_cents > 0 && (
-                                <Badge
-                                  variant={c.setup_fee_paid ? "default" : "destructive"}
-                                  className="text-[10px] cursor-pointer"
-                                  onClick={async () => {
-                                    const newPaid = !c.setup_fee_paid;
-                                    await apiFetch(`/api/super/clinics/${c.id}`, {
-                                      method: "PATCH",
-                                      body: JSON.stringify({
-                                        setup_fee_paid: newPaid,
-                                        setup_fee_paid_at: newPaid ? new Date().toISOString() : null,
-                                      }),
-                                    });
-                                    loadClinics();
-                                  }}
-                                >
-                                  {c.setup_fee_paid ? "✓ Pago" : "Pendente"}
-                                </Badge>
+                                <>
+                                  <Badge
+                                    variant={c.setup_fee_paid ? "default" : "destructive"}
+                                    className="text-[10px] cursor-pointer"
+                                    onClick={async () => {
+                                      const newPaid = !c.setup_fee_paid;
+                                      await apiFetch(`/api/super/clinics/${c.id}`, {
+                                        method: "PATCH",
+                                        body: JSON.stringify({
+                                          setup_fee_paid: newPaid,
+                                          setup_fee_paid_at: newPaid ? new Date().toISOString() : null,
+                                        }),
+                                      });
+                                      loadClinics();
+                                    }}
+                                  >
+                                    {c.setup_fee_paid ? "✓ Pago" : "Pendente"}
+                                  </Badge>
+                                  {!c.setup_fee_paid && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-[10px] h-6 px-2"
+                                      onClick={async () => {
+                                        const r = await apiFetch(`/api/super/clinics/${c.id}/setup-fee-link`, { method: "POST" });
+                                        const data = await r.json();
+                                        if (data.payment_url) {
+                                          navigator.clipboard.writeText(data.payment_url);
+                                          alert(`Link de pagamento copiado!\n\n${data.payment_url}`);
+                                        } else {
+                                          alert(data.error || "Erro ao gerar link.");
+                                        }
+                                      }}
+                                    >
+                                      💳 Link
+                                    </Button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </TableCell>

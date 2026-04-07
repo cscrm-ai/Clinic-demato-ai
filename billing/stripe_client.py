@@ -103,6 +103,78 @@ def create_portal_session(clinic: dict, return_url: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Setup Fee (taxa de implementação) — pagamento único
+# ---------------------------------------------------------------------------
+
+def create_setup_fee_checkout(
+    clinic: dict,
+    amount_cents: int,
+    success_url: str,
+    cancel_url: str,
+) -> str:
+    """Cria sessão de checkout one-time para taxa de implementação."""
+    params: dict = {
+        "mode": "payment",
+        "line_items": [{
+            "price_data": {
+                "currency": "brl",
+                "unit_amount": amount_cents,
+                "product_data": {
+                    "name": f"Implementação — {clinic.get('name', '')}",
+                    "description": "Taxa de setup e configuração da plataforma allbele.app",
+                },
+            },
+            "quantity": 1,
+        }],
+        "success_url": success_url,
+        "cancel_url":  cancel_url,
+        "metadata": {
+            "clinic_id": str(clinic["id"]),
+            "type": "setup_fee",
+        },
+    }
+
+    stripe_customer_id = clinic.get("stripe_customer_id")
+    if stripe_customer_id:
+        params["customer"] = stripe_customer_id
+    else:
+        params["customer_email"] = clinic.get("owner_email", "")
+
+    session = stripe.checkout.Session.create(**params)
+    return session.url
+
+
+def create_setup_fee_payment_link(
+    clinic: dict,
+    amount_cents: int,
+) -> str:
+    """Cria Payment Link permanente para taxa de implementação."""
+    # Create a one-time price
+    price = stripe.Price.create(
+        currency="brl",
+        unit_amount=amount_cents,
+        product_data={
+            "name": f"Implementação — {clinic.get('name', '')}",
+        },
+    )
+
+    payment_link = stripe.PaymentLink.create(
+        line_items=[{"price": price.id, "quantity": 1}],
+        metadata={
+            "clinic_id": str(clinic["id"]),
+            "type": "setup_fee",
+        },
+        after_completion={
+            "type": "redirect",
+            "redirect": {
+                "url": f"https://{clinic.get('subdomain', '')}.allbele.app/admin?setup=success",
+            },
+        },
+    )
+    return payment_link.url
+
+
+# ---------------------------------------------------------------------------
 # Cancelamento
 # ---------------------------------------------------------------------------
 

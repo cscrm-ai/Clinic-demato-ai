@@ -129,14 +129,29 @@ def _dispatch(event: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 def _handle_checkout_completed(session: dict) -> dict:
-    """checkout.session.completed → vincula subscription à clínica."""
-    clinic_id  = (session.get("metadata") or {}).get("clinic_id")
-    sub_id     = session.get("subscription")
+    """checkout.session.completed → vincula subscription à clínica ou confirma setup fee."""
+    metadata    = session.get("metadata") or {}
+    clinic_id   = metadata.get("clinic_id")
+    fee_type    = metadata.get("type")
+    sub_id      = session.get("subscription")
     customer_id = session.get("customer")
 
     if not clinic_id:
         return {"warning": "clinic_id não encontrado no metadata do checkout"}
 
+    # Setup fee payment (one-time)
+    if fee_type == "setup_fee":
+        from datetime import datetime, timezone
+        update_clinic(clinic_id, {
+            "setup_fee_paid": True,
+            "setup_fee_paid_at": datetime.now(timezone.utc).isoformat(),
+        })
+        if customer_id:
+            update_clinic(clinic_id, {"stripe_customer_id": customer_id})
+        _invalidate_cache(clinic_id)
+        return {"clinic_id": clinic_id, "type": "setup_fee", "status": "paid"}
+
+    # Subscription checkout
     patch: dict = {}
     if sub_id:
         patch["stripe_subscription_id"] = sub_id

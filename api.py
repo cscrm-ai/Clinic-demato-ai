@@ -795,6 +795,28 @@ async def super_update_clinic(
     return updated
 
 
+@app.post("/api/super/clinics/{clinic_id}/setup-fee-link")
+async def super_setup_fee_link(
+    clinic_id: str,
+    user_id: str = Depends(require_super_admin),
+):
+    """Gera link de pagamento Stripe para taxa de implementação."""
+    clinic = get_clinic_by_id(clinic_id)
+    if not clinic:
+        return JSONResponse(status_code=404, content={"error": "Clínica não encontrada."})
+
+    fee = clinic.get("setup_fee_cents", 0)
+    if not fee or fee <= 0:
+        return JSONResponse(status_code=400, content={"error": "Clínica não tem taxa de implementação configurada."})
+
+    try:
+        from billing.stripe_client import create_setup_fee_payment_link
+        url = create_setup_fee_payment_link(clinic, fee)
+        return {"payment_url": url}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Erro ao gerar link: {e}"})
+
+
 @app.post("/api/super/clinics/{clinic_id}/suspend")
 async def super_suspend_clinic(
     clinic_id: str,
