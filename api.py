@@ -460,8 +460,15 @@ async def admin_buy_analyses(
     clinic = request.state.clinic
     body = await request.json()
     quantity = int(body.get("quantity", 10))
-    plan = clinic.get("plans") or {}
-    price_per = plan.get("extra_analysis_price_cents", 990)
+
+    # Busca preço da faixa correta
+    db = get_db()
+    tiers = db.table("extra_analysis_tiers").select("*").order("min_qty").execute().data or []
+    price_per = 990  # fallback
+    for tier in tiers:
+        if quantity >= tier["min_qty"] and (tier["max_qty"] is None or quantity <= tier["max_qty"]):
+            price_per = tier["price_cents"]
+            break
     total = price_per * quantity
 
     try:
@@ -665,6 +672,43 @@ async def super_create_plan(
     }
     result = db.table("plans").insert(record).execute()
     return result.data[0]
+
+
+@app.get("/api/super/extra-tiers")
+async def super_get_extra_tiers(user_id: str = Depends(require_super_admin)):
+    """Lista faixas de preço para análises avulsas."""
+    db = get_db()
+    result = db.table("extra_analysis_tiers").select("*").order("min_qty").execute()
+    return result.data or []
+
+
+@app.put("/api/super/extra-tiers")
+async def super_update_extra_tiers(request: Request, user_id: str = Depends(require_super_admin)):
+    """Substitui todas as faixas de preço de análises avulsas."""
+    db = get_db()
+    body = await request.json()
+    tiers = body.get("tiers", [])
+
+    # Delete all existing
+    db.table("extra_analysis_tiers").delete().gte("min_qty", 0).execute()
+
+    # Insert new
+    if tiers:
+        records = [{"min_qty": t["min_qty"], "max_qty": t.get("max_qty"), "price_cents": t["price_cents"]} for t in tiers]
+        db.table("extra_analysis_tiers").insert(records).execute()
+
+    return {"ok": True, "count": len(tiers)}
+
+
+@app.get("/api/admin/billing/extra-tiers")
+async def admin_get_extra_tiers(
+    request: Request,
+    user_id: str = Depends(require_clinic_admin),
+):
+    """Lista faixas de preço para a clínica ver no modal de compra."""
+    db = get_db()
+    result = db.table("extra_analysis_tiers").select("*").order("min_qty").execute()
+    return result.data or []
 
 
 @app.get("/api/super/clinics")

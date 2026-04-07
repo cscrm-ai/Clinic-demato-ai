@@ -115,6 +115,11 @@ export default function SuperAdminPage() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
+  // Extra analysis tiers
+  const [tiers, setTiers] = useState<{ id?: string; min_qty: number; max_qty: number | null; price_cents: number }[]>([]);
+  const [tiersSaving, setTiersSaving] = useState(false);
+  const [tiersMsg, setTiersMsg] = useState("");
+
   // Expanded analysis in usage tab
   const [expandedAnalysis, setExpandedAnalysis] = useState<string | null>(null);
   const [analysisDetail, setAnalysisDetail] = useState<Record<string, unknown> | null>(null);
@@ -205,6 +210,23 @@ export default function SuperAdminPage() {
   async function loadUsage() {
     const r = await apiFetch("/api/super/usage");
     if (r.ok) setUsage(await r.json());
+  }
+
+  async function loadTiers() {
+    const r = await apiFetch("/api/super/extra-tiers");
+    if (r.ok) setTiers(await r.json());
+  }
+
+  async function saveTiers() {
+    setTiersSaving(true);
+    setTiersMsg("");
+    const r = await apiFetch("/api/super/extra-tiers", {
+      method: "PUT",
+      body: JSON.stringify({ tiers }),
+    });
+    setTiersSaving(false);
+    setTiersMsg(r.ok ? "Salvo!" : "Erro ao salvar.");
+    setTimeout(() => setTiersMsg(""), 3000);
   }
 
   async function loadModelCosts() {
@@ -342,7 +364,7 @@ export default function SuperAdminPage() {
                 setActiveTab(tab);
                 if (tab === "uso") loadUsage();
                 if (tab === "financeiro") loadInvoices();
-                if (tab === "planos") loadPlans();
+                if (tab === "planos") { loadPlans(); loadTiers(); }
                 if (tab === "config") loadModelCosts();
               }}
               className={`w-full text-left px-5 py-2.5 text-sm transition-colors ${
@@ -1142,6 +1164,108 @@ export default function SuperAdminPage() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+
+            {/* ── Faixas de preço para análises avulsas ── */}
+            <div className="mt-10 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-[#3A3330]">Análises Avulsas — Faixas de Preço</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Quanto mais a clínica compra, menor o preço unitário.</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTiers([...tiers, { min_qty: (tiers.length > 0 ? (tiers[tiers.length - 1].max_qty || 0) + 1 : 1), max_qty: null, price_cents: 990 }])}
+                  >
+                    + Faixa
+                  </Button>
+                  <Button size="sm" disabled={tiersSaving} onClick={saveTiers}>
+                    {tiersSaving ? "Salvando…" : "Salvar faixas"}
+                  </Button>
+                  {tiersMsg && <span className={`text-sm self-center ${tiersMsg === "Salvo!" ? "text-green-600" : "text-red-600"}`}>{tiersMsg}</span>}
+                </div>
+              </div>
+
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-28">De (qtd)</TableHead>
+                        <TableHead className="w-28">Até (qtd)</TableHead>
+                        <TableHead className="w-36">Preço/análise (R$)</TableHead>
+                        <TableHead>Preview</TableHead>
+                        <TableHead className="w-12" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tiers.map((t, i) => (
+                        <TableRow key={i}>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={t.min_qty}
+                              className="h-8 text-sm w-20"
+                              onChange={(e) => {
+                                const u = [...tiers];
+                                u[i] = { ...t, min_qty: Number(e.target.value) };
+                                setTiers(u);
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              placeholder="∞"
+                              value={t.max_qty ?? ""}
+                              className="h-8 text-sm w-20"
+                              onChange={(e) => {
+                                const u = [...tiers];
+                                u[i] = { ...t, max_qty: e.target.value === "" ? null : Number(e.target.value) };
+                                setTiers(u);
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={(t.price_cents / 100).toFixed(2)}
+                              className="h-8 text-sm w-24"
+                              onChange={(e) => {
+                                const u = [...tiers];
+                                u[i] = { ...t, price_cents: Math.round(Number(e.target.value) * 100) };
+                                setTiers(u);
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {t.min_qty} análises = R$ {((t.price_cents / 100) * t.min_qty).toFixed(2)}
+                            {t.max_qty && ` · ${t.max_qty} análises = R$ ${((t.price_cents / 100) * t.max_qty).toFixed(2)}`}
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              className="text-xs text-muted-foreground hover:text-destructive"
+                              onClick={() => setTiers(tiers.filter((_, idx) => idx !== i))}
+                            >
+                              ✕
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {tiers.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-6">
+                            Nenhuma faixa configurada. Clique em &quot;+ Faixa&quot; para adicionar.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 

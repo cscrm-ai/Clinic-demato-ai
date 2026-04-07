@@ -167,6 +167,7 @@ export default function AdminPage() {
   const [buyOpen, setBuyOpen] = useState(false);
   const [buyQty, setBuyQty] = useState(10);
   const [buyLoading, setBuyLoading] = useState(false);
+  const [buyTiers, setBuyTiers] = useState<{ min_qty: number; max_qty: number | null; price_cents: number }[]>([]);
   // Analyses state
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [analysesLoading, setAnalysesLoading] = useState(false);
@@ -626,7 +627,7 @@ export default function AdminPage() {
                             {billing.extra_analyses_remaining && billing.extra_analyses_remaining > 0 ? (
                               <p className="text-xs text-green-600">✓ Você tem {billing.extra_analyses_remaining} análise{billing.extra_analyses_remaining > 1 ? "s" : ""} avulsa{billing.extra_analyses_remaining > 1 ? "s" : ""} disponível{billing.extra_analyses_remaining > 1 ? "is" : ""}.</p>
                             ) : (
-                              <Button size="sm" className="text-xs" onClick={() => setBuyOpen(true)}>
+                              <Button size="sm" className="text-xs" onClick={() => { setBuyOpen(true); apiFetch("/api/admin/billing/extra-tiers").then(r => r.ok ? r.json() : []).then(setBuyTiers); }}>
                                 Comprar análises avulsas (R$ {((billing.extra_analysis_price_cents || 990) / 100).toFixed(2)}/cada)
                               </Button>
                             )}
@@ -1109,7 +1110,7 @@ export default function AdminPage() {
                           <Button variant="outline" size="sm" onClick={() => setUpgradeOpen(true)}>
                             Fazer upgrade
                           </Button>
-                          <Button size="sm" onClick={() => setBuyOpen(true)}>
+                          <Button size="sm" onClick={() => { setBuyOpen(true); apiFetch("/api/admin/billing/extra-tiers").then(r => r.ok ? r.json() : []).then(setBuyTiers); }}>
                             Comprar análises avulsas
                           </Button>
                         </div>
@@ -1286,8 +1287,22 @@ export default function AdminPage() {
             <DialogTitle>Comprar análises avulsas</DialogTitle>
           </DialogHeader>
           {(() => {
-            const price = (billing?.extra_analysis_price_cents || 990) / 100;
+            // Find current tier price
+            const fallback = (billing?.extra_analysis_price_cents || 990);
+            let priceCents = fallback;
+            let tierLabel = "";
+            const maxPrice = buyTiers.length > 0 ? Math.max(...buyTiers.map(t => t.price_cents)) : fallback;
+            for (const t of buyTiers) {
+              if (buyQty >= t.min_qty && (t.max_qty === null || buyQty <= t.max_qty)) {
+                priceCents = t.price_cents;
+                tierLabel = t.max_qty ? `Faixa ${t.min_qty}–${t.max_qty}` : `Faixa ${t.min_qty}+`;
+                break;
+              }
+            }
+            const price = priceCents / 100;
             const total = price * buyQty;
+            const discount = maxPrice > priceCents ? Math.round((1 - priceCents / maxPrice) * 100) : 0;
+
             return (
               <div className="space-y-6 py-2">
                 {/* Quantity display */}
@@ -1309,17 +1324,22 @@ export default function AdminPage() {
                       background: `linear-gradient(to right, #D99C94 ${buyQty}%, #e5e7eb ${buyQty}%)`,
                     }}
                   />
+                  {/* Tier markers */}
                   <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>1</span>
-                    <span>25</span>
-                    <span>50</span>
-                    <span>75</span>
-                    <span>100</span>
+                    {buyTiers.length > 0 ? buyTiers.map((t, i) => (
+                      <span key={i} className={buyQty >= t.min_qty && (t.max_qty === null || buyQty <= t.max_qty) ? "font-bold text-[#D99C94]" : ""}>
+                        {t.min_qty}+: R${(t.price_cents/100).toFixed(0)}
+                      </span>
+                    )) : (
+                      <>
+                        <span>1</span><span>25</span><span>50</span><span>75</span><span>100</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
                 {/* Quick buttons */}
-                <div className="flex gap-2 justify-center">
+                <div className="flex gap-2 justify-center flex-wrap">
                   {[5, 10, 25, 50, 100].map((n) => (
                     <Button
                       key={n}
@@ -1335,17 +1355,40 @@ export default function AdminPage() {
 
                 {/* Price breakdown */}
                 <Card className="bg-muted/50">
-                  <CardContent className="pt-4 pb-3 space-y-1">
+                  <CardContent className="pt-4 pb-3 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>{buyQty}x análise avulsa</span>
-                      <span>R$ {price.toFixed(2)} cada</span>
+                      <div className="text-right">
+                        <span className="font-semibold">R$ {price.toFixed(2)}</span>
+                        <span className="text-muted-foreground"> cada</span>
+                      </div>
                     </div>
+                    {tierLabel && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px]">{tierLabel}</Badge>
+                        {discount > 0 && (
+                          <Badge className="text-[10px] bg-green-500 text-white">{discount}% OFF</Badge>
+                        )}
+                      </div>
+                    )}
                     <div className="flex justify-between text-lg font-bold pt-2 border-t">
                       <span>Total</span>
                       <span style={{ color: "#D99C94" }}>R$ {total.toFixed(2)}</span>
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Tiers table preview */}
+                {buyTiers.length > 1 && (
+                  <div className="text-[11px] text-muted-foreground space-y-0.5">
+                    {buyTiers.map((t, i) => (
+                      <div key={i} className={`flex justify-between px-2 py-0.5 rounded ${buyQty >= t.min_qty && (t.max_qty === null || buyQty <= t.max_qty) ? "bg-[#D99C94]/10 font-semibold text-[#3A3330]" : ""}`}>
+                        <span>{t.min_qty}{t.max_qty ? `–${t.max_qty}` : "+"} análises</span>
+                        <span>R$ {(t.price_cents/100).toFixed(2)}/cada</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Buy button */}
                 <Button
