@@ -736,7 +736,7 @@ export default function SuperAdminPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Gemini 2.0 Flash Lite</CardTitle>
+                  <CardTitle className="text-base">Gemini 2.5 Flash-Lite</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -747,7 +747,7 @@ export default function SuperAdminPage() {
                         step="0.001"
                         value={modelCosts.gemini_input_per_1m_usd || ""}
                         onChange={(e) => setModelCosts({ ...modelCosts, gemini_input_per_1m_usd: e.target.value })}
-                        placeholder="0.075"
+                        placeholder="0.10"
                       />
                     </div>
                     <div className="space-y-1">
@@ -757,7 +757,7 @@ export default function SuperAdminPage() {
                         step="0.001"
                         value={modelCosts.gemini_output_per_1m_usd || ""}
                         onChange={(e) => setModelCosts({ ...modelCosts, gemini_output_per_1m_usd: e.target.value })}
-                        placeholder="0.300"
+                        placeholder="0.40"
                       />
                     </div>
                   </div>
