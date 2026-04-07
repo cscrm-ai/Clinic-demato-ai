@@ -59,6 +59,7 @@ const ANALYSIS_STEPS = [
 
 export default function PatientPage() {
   const [config, setConfig] = useState<ClinicConfig | null>(null);
+  const [ready, setReady] = useState(false);
   const [screen, setScreen] = useState<"upload" | "analyzing" | "report">("upload");
   const [preview, setPreview] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
@@ -81,8 +82,11 @@ export default function PatientPage() {
           "--font-main",
           `'${cfg.font}', system-ui, sans-serif`
         );
+        setReady(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        setReady(true); // Show even if config fails
+      });
 
     // Check if should show PWA install prompt
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches
@@ -173,6 +177,17 @@ export default function PatientPage() {
   const clinicName = config?.clinic_name || "Análise de Pele";
   const welcomeText = config?.welcome_text || "Toda forma de beleza merece o melhor resultado.";
   const logoUrl = config?.logo_url || "";
+
+  // ─── Loading screen until config is ready ──────────────────────────────
+  if (!ready) {
+    return (
+      <main className="min-h-dvh flex items-center justify-center" style={{ background: "#F0EBE3" }}>
+        <div className="animate-pulse text-center">
+          <div className="w-16 h-16 rounded-full mx-auto mb-4" style={{ background: "linear-gradient(135deg, #D9BFB2, #D99C94)" }} />
+        </div>
+      </main>
+    );
+  }
 
   // ─── Upload (popup-only — no background upload screen) ──────────────────
   if (screen === "upload") {
