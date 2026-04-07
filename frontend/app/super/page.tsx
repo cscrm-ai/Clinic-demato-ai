@@ -650,6 +650,32 @@ export default function SuperAdminPage() {
                               >
                                 📋 Admin
                               </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => {
+                                  const url = `https://${c.subdomain}.allbele.app`;
+                                  const msg = `✨ *${c.name}* — Análise de Pele com IA\n\n` +
+                                    `Acesse: ${url}\n\n` +
+                                    `📲 *Instalar como aplicativo:*\n\n` +
+                                    `*iPhone (Safari):*\n` +
+                                    `1. Abra o link acima no Safari\n` +
+                                    `2. Toque no ícone de compartilhar (⬆️)\n` +
+                                    `3. Toque em "Adicionar à Tela de Início"\n` +
+                                    `4. Confirme tocando "Adicionar"\n\n` +
+                                    `*Android (Chrome):*\n` +
+                                    `1. Abra o link acima no Chrome\n` +
+                                    `2. Toque no menu (⋮) no canto superior\n` +
+                                    `3. Toque em "Instalar aplicativo"\n` +
+                                    `4. Confirme a instalação\n\n` +
+                                    `Após instalar, o app abre em tela cheia como um aplicativo nativo! 🎉`;
+                                  navigator.clipboard.writeText(msg);
+                                  alert("Mensagem com instruções de instalação copiada!");
+                                }}
+                              >
+                                📲 PWA
+                              </Button>
                               {c.status === "active" ? (
                                 <Button
                                   variant="outline"
