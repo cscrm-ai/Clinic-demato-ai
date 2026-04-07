@@ -948,7 +948,7 @@ async def super_usage(
     """Lista eventos de uso com filtros opcionais + dados da análise."""
     db    = get_db()
     query = db.table("usage_events").select(
-        "*, clinics(name, subdomain), analyses(duration_ms, skin_type, fitzpatrick_type, created_at, total_cost_cents)"
+        "*, clinics(name, subdomain), analyses(duration_ms, skin_type, fitzpatrick_type, skin_score, created_at, total_cost_cents, image_path, findings, plano_terapeutico, am_routine, pm_routine, general_observations)"
     )
 
     if clinic_id:
@@ -957,7 +957,30 @@ async def super_usage(
         query = query.eq("provider", provider)
 
     result = query.order("created_at", desc=True).limit(1000).execute()
-    return result.data or []
+    data = result.data or []
+
+    # Generate signed URLs for analysis images (deduplicated)
+    seen_analyses: dict[str, str] = {}
+    for row in data:
+        a = row.get("analyses")
+        aid = row.get("analysis_id", "")
+        if a and aid and aid not in seen_analyses:
+            path = a.get("image_path", "")
+            if path:
+                try:
+                    seen_analyses[aid] = get_signed_url(path, expires_in=3600)
+                except Exception:
+                    seen_analyses[aid] = ""
+            else:
+                seen_analyses[aid] = ""
+    # Inject image_url into analyses
+    for row in data:
+        a = row.get("analyses")
+        aid = row.get("analysis_id", "")
+        if a and aid in seen_analyses:
+            a["image_url"] = seen_analyses[aid]
+
+    return data
 
 
 # ═══════════════════════════════════════════════════════════════════════════

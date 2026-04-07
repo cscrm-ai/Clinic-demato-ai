@@ -61,7 +61,13 @@ type Usage = {
   cost_cents?: number;
   latency_ms?: number;
   clinics?: { name?: string; subdomain?: string };
-  analyses?: { duration_ms?: number; skin_type?: string; fitzpatrick_type?: string; created_at?: string; total_cost_cents?: number };
+  analyses?: {
+    duration_ms?: number; skin_type?: string; fitzpatrick_type?: string; skin_score?: number;
+    created_at?: string; total_cost_cents?: number; image_url?: string;
+    findings?: { description: string; zone?: string; priority?: string; conduta?: string; x_point?: number; y_point?: number; procedimentos_indicados?: { nome: string; sessoes_estimadas?: string }[] }[];
+    plano_terapeutico?: { curto_prazo?: string; medio_prazo?: string; longo_prazo?: string };
+    am_routine?: string; pm_routine?: string; general_observations?: string;
+  };
 };
 
 type Invoice = {
@@ -762,6 +768,74 @@ export default function SuperAdminPage() {
                                 </TableRow>
                               </TableBody>
                             </Table>
+
+                            {/* Patient report preview */}
+                            {analysis && (
+                              <div className="p-4 border-t space-y-3">
+                                <h4 className="text-sm font-bold">Resultado da Análise</h4>
+
+                                {/* Face map with markers */}
+                                {analysis.image_url && analysis.findings?.length ? (
+                                  <div className="relative max-w-[300px] rounded-xl overflow-hidden">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={analysis.image_url} alt="Foto" className="w-full block" />
+                                    {analysis.findings.map((f, fi) => {
+                                      const x = (f.x_point ?? 0) * 100;
+                                      const y = (f.y_point ?? 0) * 100;
+                                      if (x === 0 && y === 0) return null;
+                                      return (
+                                        <div key={fi} className="absolute flex items-center justify-center rounded-full border-2 border-white text-white text-[0.55rem] font-bold shadow-md"
+                                          style={{
+                                            width: 20, height: 20, left: `${x}%`, top: `${y}%`,
+                                            transform: "translate(-50%,-50%)",
+                                            background: f.priority === "PRIORITARIO" ? "#E74C3C" : f.priority === "OPCIONAL" ? "#827870" : "#D99C94",
+                                          }}
+                                        >{fi + 1}</div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : null}
+
+                                {/* Badges */}
+                                <div className="flex gap-2 flex-wrap">
+                                  {analysis.fitzpatrick_type && <Badge style={{ background: "#D99C94", color: "#fff" }} className="text-[10px]">FOTOTIPO {analysis.fitzpatrick_type}</Badge>}
+                                  {typeof analysis.skin_score === "number" && <Badge style={{ background: analysis.skin_score >= 80 ? "#22c55e" : analysis.skin_score >= 60 ? "#eab308" : "#ef4444", color: "#fff" }} className="text-[10px]">SCORE {analysis.skin_score}/100</Badge>}
+                                </div>
+                                {analysis.skin_type && <p className="text-xs opacity-80">{analysis.skin_type}</p>}
+
+                                {/* Findings list */}
+                                {analysis.findings?.map((f, fi) => (
+                                  <div key={fi} className="text-xs border-l-2 pl-2 space-y-0.5" style={{ borderColor: f.priority === "PRIORITARIO" ? "#E74C3C" : f.priority === "OPCIONAL" ? "#827870" : "#D99C94" }}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold">{fi + 1}. {f.zone || ""}</span>
+                                      {f.priority && <Badge variant="outline" className="text-[9px] py-0">{f.priority}</Badge>}
+                                    </div>
+                                    <p className="font-medium">{f.description}</p>
+                                    {f.conduta && <p className="opacity-60">Conduta: {f.conduta}</p>}
+                                    {f.procedimentos_indicados?.map((p, pi) => (
+                                      <p key={pi} className="opacity-50">• {p.nome}{p.sessoes_estimadas ? ` · ${p.sessoes_estimadas}` : ""}</p>
+                                    ))}
+                                  </div>
+                                ))}
+
+                                {/* Plan + Routines */}
+                                {analysis.plano_terapeutico && (
+                                  <div className="text-xs space-y-1">
+                                    <p className="font-bold">Plano Terapêutico</p>
+                                    {analysis.plano_terapeutico.curto_prazo && <p><span className="font-semibold text-red-500">Curto:</span> {analysis.plano_terapeutico.curto_prazo}</p>}
+                                    {analysis.plano_terapeutico.medio_prazo && <p><span className="font-semibold" style={{color:"#D99C94"}}>Médio:</span> {analysis.plano_terapeutico.medio_prazo}</p>}
+                                    {analysis.plano_terapeutico.longo_prazo && <p><span className="font-semibold text-gray-500">Longo:</span> {analysis.plano_terapeutico.longo_prazo}</p>}
+                                  </div>
+                                )}
+                                {(analysis.am_routine || analysis.pm_routine) && (
+                                  <div className="text-xs space-y-1">
+                                    <p className="font-bold">Rotina</p>
+                                    {analysis.am_routine && <p><span className="font-semibold" style={{color:"#D99C94"}}>Manhã:</span> {analysis.am_routine}</p>}
+                                    {analysis.pm_routine && <p><span className="font-semibold" style={{color:"#D99C94"}}>Noite:</span> {analysis.pm_routine}</p>}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                       </Card>
