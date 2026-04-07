@@ -207,7 +207,9 @@ def get_super_admin_overview(days: int = 30, from_date: str | None = None, to_da
         d2 = _date.fromisoformat(to_date)
         days = max((d2 - d1).days + 1, 1)
     else:
-        period_start = (now - timedelta(days=days)).isoformat()
+        # days=1 means "today" (from midnight), days=2 means "yesterday + today", etc.
+        start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        period_start = (start_of_today - timedelta(days=days - 1)).isoformat()
         period_end = None
 
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
