@@ -275,6 +275,38 @@ def get_super_admin_overview(days: int = 30, from_date: str | None = None, to_da
             ds = d.strftime("%Y-%m-%d")
             chart_data.append({"date": ds, "count": day_counts.get(ds, 0)})
 
+    # Per-clinic breakdown for the period
+    clinic_events_q = db.table("usage_events").select("clinic_id, cost_cents, clinics(name, subdomain)").gte("created_at", period_start)
+    if period_end:
+        clinic_events_q = clinic_events_q.lte("created_at", period_end)
+    clinic_events = clinic_events_q.execute()
+
+    clinic_analyses_q = db.table("analyses").select("clinic_id, clinics(name, subdomain)").gte("created_at", period_start)
+    if period_end:
+        clinic_analyses_q = clinic_analyses_q.lte("created_at", period_end)
+    clinic_analyses_raw = clinic_analyses_q.execute()
+
+    # Aggregate per clinic
+    clinic_stats: dict[str, dict] = {}
+    for row in clinic_analyses_raw.data or []:
+        cid = row.get("clinic_id", "")
+        if cid not in clinic_stats:
+            c = row.get("clinics") or {}
+            clinic_stats[cid] = {"name": c.get("name", ""), "subdomain": c.get("subdomain", ""), "analyses": 0, "cost_cents": 0}
+        clinic_stats[cid]["analyses"] += 1
+    for row in clinic_events.data or []:
+        cid = row.get("clinic_id", "")
+        if cid not in clinic_stats:
+            c = row.get("clinics") or {}
+            clinic_stats[cid] = {"name": c.get("name", ""), "subdomain": c.get("subdomain", ""), "analyses": 0, "cost_cents": 0}
+        clinic_stats[cid]["cost_cents"] += float(row.get("cost_cents", 0))
+
+    clinic_chart = [
+        {"name": v["subdomain"] or v["name"], "analyses": v["analyses"], "cost": round(v["cost_cents"] / 100, 2)}
+        for v in clinic_stats.values()
+    ]
+    clinic_chart.sort(key=lambda x: x["analyses"], reverse=True)
+
     return {
         "active_clinics": active.count or 0,
         "total_clinics": total.count or 0,
@@ -284,6 +316,7 @@ def get_super_admin_overview(days: int = 30, from_date: str | None = None, to_da
         "mrr_cents": mrr,
         "past_due_clinics": past_due.count or 0,
         "chart_data": chart_data,
+        "clinic_chart": clinic_chart,
     }
 
 

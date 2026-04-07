@@ -448,21 +448,18 @@ export default function SuperAdminPage() {
               </CardContent>
             </Card>
 
-            {/* Chart: analyses + cost per clinic */}
-            {clinics.length > 0 && (
+            {/* Chart: analyses + cost per clinic — from overview (period-filtered) */}
+            {Array.isArray(overview?.clinic_chart) && (overview.clinic_chart as { name: string; analyses: number; cost: number }[]).length > 0 && (
               <Card className="mt-6">
                 <CardHeader>
-                  <CardTitle className="text-base">Análises e custo por clínica (mês atual)</CardTitle>
+                  <CardTitle className="text-base">
+                    Análises e custo por clínica {dashPeriod === "custom" ? `(${customFrom} a ${customTo})` : dashPeriod === "1" ? "(hoje)" : `(${dashPeriod}d)`}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={Math.max(200, clinics.length * 40)}>
+                  <ResponsiveContainer width="100%" height={Math.max(200, (overview.clinic_chart as unknown[]).length * 50)}>
                     <BarChart
-                      data={clinics.map((c) => {
-                        const u = c.usage_this_month;
-                        const analyses = typeof u === "object" ? ((u as Record<string, unknown>)?.analyses_count ?? 0) : (u ?? 0);
-                        const cost = typeof u === "object" ? (Number((u as Record<string, unknown>)?.total_cost_cents ?? 0) / 100) : 0;
-                        return { name: c.subdomain, analyses: Number(analyses), cost: Math.round(cost * 100) / 100 };
-                      })}
+                      data={overview.clinic_chart as { name: string; analyses: number; cost: number }[]}
                       layout="vertical"
                       margin={{ left: 80 }}
                     >
