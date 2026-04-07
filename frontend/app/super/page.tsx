@@ -61,6 +61,7 @@ type Usage = {
   cost_cents?: number;
   latency_ms?: number;
   clinics?: { name?: string; subdomain?: string };
+  analyses?: { duration_ms?: number; skin_type?: string; fitzpatrick_type?: string; created_at?: string; total_cost_cents?: number };
 };
 
 type Invoice = {
@@ -633,27 +634,46 @@ export default function SuperAdminPage() {
 
                   {analyses.map(([analysisId, events]) => {
                     const totalCents = events.reduce((s, e) => s + Number(e.cost_cents || 0), 0);
+                    const totalLatency = events.reduce((s, e) => s + Number(e.latency_ms || 0), 0);
                     const first = events[0];
                     const clinic = first?.clinics;
+                    const analysis = first?.analyses;
                     const clinicName = clinic?.name || clinic?.subdomain || "—";
+                    const clinicSub = clinic?.subdomain || "";
                     const date = first?.created_at ? new Date(first.created_at).toLocaleString("pt-BR") : "—";
+                    const durationSec = analysis?.duration_ms ? Math.round(analysis.duration_ms / 1000) : null;
+                    const skinType = analysis?.skin_type || "";
+                    const fitz = analysis?.fitzpatrick_type || "";
                     const isOpen = expandedAnalysis === analysisId;
 
                     return (
                       <Card key={analysisId} className="overflow-hidden">
                         <button
-                          className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors"
+                          className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors"
                           onClick={() => setExpandedAnalysis(isOpen ? null : analysisId)}
                         >
-                          <span className="text-xs" style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>▶</span>
-                          <span className="text-sm flex-1 min-w-0">
-                            <span className="font-semibold">{clinicName}</span>
-                            <span className="text-muted-foreground ml-2">{date}</span>
-                          </span>
-                          <span className="text-xs text-muted-foreground">{events.length} calls</span>
-                          <span className="text-sm font-mono font-bold" style={{ color: "#D99C94" }}>
-                            R$ {(totalCents / 100).toFixed(4)}
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs shrink-0" style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>▶</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-semibold">{clinicName}</span>
+                                {clinicSub && <Badge variant="outline" className="text-[10px]">{clinicSub}</Badge>}
+                                {durationSec != null && (
+                                  <Badge variant="secondary" className="text-[10px]">⏱ {durationSec}s</Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                                <span>{date}</span>
+                                {skinType && <span>· {skinType}</span>}
+                                {fitz && <span>· Fototipo {fitz}</span>}
+                                <span>· {events.length} calls</span>
+                                {totalLatency > 0 && <span>· API: {(totalLatency / 1000).toFixed(1)}s</span>}
+                              </div>
+                            </div>
+                            <span className="text-sm font-mono font-bold shrink-0" style={{ color: "#D99C94" }}>
+                              R$ {(totalCents / 100).toFixed(4)}
+                            </span>
+                          </div>
                         </button>
 
                         {isOpen && (
@@ -675,7 +695,7 @@ export default function SuperAdminPage() {
                                       {e.created_at ? new Date(e.created_at).toLocaleTimeString("pt-BR") : "—"}
                                     </TableCell>
                                     <TableCell>
-                                      <Badge variant="outline" className="text-[10px]">
+                                      <Badge variant={e.provider === "gemini" ? "default" : "secondary"} className="text-[10px]">
                                         {String(e.provider || "—")}
                                       </Badge>
                                     </TableCell>
@@ -686,6 +706,16 @@ export default function SuperAdminPage() {
                                     </TableCell>
                                   </TableRow>
                                 ))}
+                                {/* Total row */}
+                                <TableRow className="font-semibold bg-muted/50">
+                                  <TableCell className="text-xs">TOTAL</TableCell>
+                                  <TableCell />
+                                  <TableCell />
+                                  <TableCell className="text-xs">{(totalLatency / 1000).toFixed(1)}s</TableCell>
+                                  <TableCell className="text-right font-mono text-xs">
+                                    R$ {(totalCents / 100).toFixed(4)}
+                                  </TableCell>
+                                </TableRow>
                               </TableBody>
                             </Table>
                           </div>

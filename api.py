@@ -939,9 +939,11 @@ async def super_usage(
     provider:  str | None = None,
     user_id: str = Depends(require_super_admin),
 ):
-    """Lista eventos de uso com filtros opcionais."""
+    """Lista eventos de uso com filtros opcionais + dados da análise."""
     db    = get_db()
-    query = db.table("usage_events").select("*, clinics(name, subdomain)")
+    query = db.table("usage_events").select(
+        "*, clinics(name, subdomain), analyses(duration_ms, skin_type, fitzpatrick_type, created_at, total_cost_cents)"
+    )
 
     if clinic_id:
         query = query.eq("clinic_id", clinic_id)
