@@ -670,6 +670,7 @@ async def super_create_clinic(
 
     # Cria clínica
     config  = {**DEFAULT_CONFIG, "clinic_name": name}
+    setup_fee_cents = int(body.get("setup_fee_cents", 0))
     clinic_data = {
         "subdomain":   subdomain,
         "name":        name,
@@ -677,6 +678,7 @@ async def super_create_clinic(
         "plan_id":     plan_id,
         "config":      config,
         "status":      "trial",
+        "setup_fee_cents": setup_fee_cents,
         "trial_ends_at": (
             datetime.datetime.now(datetime.timezone.utc)
             + datetime.timedelta(days=14)
@@ -778,7 +780,7 @@ async def super_update_clinic(
     """Atualiza status, plano ou outros campos de uma clínica."""
     body    = await request.json()
     # Campos permitidos pelo super admin
-    allowed = {"status", "plan_id", "subscription_status", "cancel_at_period_end", "name"}
+    allowed = {"status", "plan_id", "subscription_status", "cancel_at_period_end", "name", "setup_fee_cents", "setup_fee_paid", "setup_fee_paid_at"}
     patch   = {k: v for k, v in body.items() if k in allowed}
 
     if not patch:

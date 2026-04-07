@@ -47,6 +47,9 @@ type Clinic = {
   owner_email: string;
   plan_name: string;
   usage_this_month: number | { analyses_count?: number; total_cost_cents?: number; period?: string };
+  setup_fee_cents: number;
+  setup_fee_paid: boolean;
+  setup_fee_paid_at?: string;
   created_at: string;
 };
 
@@ -100,7 +103,7 @@ export default function SuperAdminPage() {
 
   // New clinic modal
   const [newOpen, setNewOpen] = useState(false);
-  const [newForm, setNewForm] = useState({ subdomain: "", name: "", owner_email: "", plan_id: "" });
+  const [newForm, setNewForm] = useState({ subdomain: "", name: "", owner_email: "", plan_id: "", setup_fee: "" });
   const [newLoading, setNewLoading] = useState(false);
   const [newMsg, setNewMsg] = useState({ text: "", ok: false });
 
@@ -247,13 +250,16 @@ export default function SuperAdminPage() {
     setNewMsg({ text: "", ok: false });
     const r = await apiFetch("/api/super/clinics", {
       method: "POST",
-      body: JSON.stringify(newForm),
+      body: JSON.stringify({
+        ...newForm,
+        setup_fee_cents: newForm.setup_fee ? Math.round(Number(newForm.setup_fee) * 100) : 0,
+      }),
     });
     const data = await r.json();
     if (r.ok && data.id) {
       setNewMsg({ text: "Clínica criada! E-mail de acesso enviado.", ok: true });
       loadClinics();
-      setNewForm({ subdomain: "", name: "", owner_email: "", plan_id: "" });
+      setNewForm({ subdomain: "", name: "", owner_email: "", plan_id: "", setup_fee: "" });
     } else {
       setNewMsg({ text: data.detail || data.error || "Erro ao criar.", ok: false });
     }
@@ -513,6 +519,7 @@ export default function SuperAdminPage() {
                         <TableHead>Status</TableHead>
                         <TableHead>Assinatura</TableHead>
                         <TableHead>Uso/mês</TableHead>
+                        <TableHead>Implementação</TableHead>
                         <TableHead />
                       </TableRow>
                     </TableHeader>
@@ -528,6 +535,32 @@ export default function SuperAdminPage() {
                             {typeof c.usage_this_month === "object"
                               ? (c.usage_this_month?.analyses_count ?? 0)
                               : (c.usage_this_month ?? 0)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-mono">
+                                R$ {((c.setup_fee_cents || 0) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}
+                              </span>
+                              {c.setup_fee_cents > 0 && (
+                                <Badge
+                                  variant={c.setup_fee_paid ? "default" : "destructive"}
+                                  className="text-[10px] cursor-pointer"
+                                  onClick={async () => {
+                                    const newPaid = !c.setup_fee_paid;
+                                    await apiFetch(`/api/super/clinics/${c.id}`, {
+                                      method: "PATCH",
+                                      body: JSON.stringify({
+                                        setup_fee_paid: newPaid,
+                                        setup_fee_paid_at: newPaid ? new Date().toISOString() : null,
+                                      }),
+                                    });
+                                    loadClinics();
+                                  }}
+                                >
+                                  {c.setup_fee_paid ? "✓ Pago" : "Pendente"}
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1 flex-wrap">
@@ -641,6 +674,16 @@ export default function SuperAdminPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Taxa de implementação (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00 (sem taxa)"
+                      value={newForm.setup_fee}
+                      onChange={(e) => setNewForm({ ...newForm, setup_fee: e.target.value })}
+                    />
                   </div>
                   {newMsg.text && (
                     <p className={`text-sm ${newMsg.ok ? "text-green-600" : "text-destructive"}`}>
@@ -862,6 +905,37 @@ export default function SuperAdminPage() {
           {/* ── Financeiro ── */}
           <TabsContent value="financeiro">
             <h1 className="text-2xl font-bold text-[#3A3330] mb-4">Financeiro</h1>
+
+            {/* Setup fee summary */}
+            {clinics.length > 0 && (() => {
+              const totalSetup = clinics.reduce((s, c) => s + (c.setup_fee_cents || 0), 0);
+              const paidSetup = clinics.filter(c => c.setup_fee_paid && c.setup_fee_cents > 0).reduce((s, c) => s + c.setup_fee_cents, 0);
+              const pendingSetup = totalSetup - paidSetup;
+              const pendingCount = clinics.filter(c => !c.setup_fee_paid && c.setup_fee_cents > 0).length;
+              return totalSetup > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Card>
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-2xl font-bold text-[#3b82f6]">R$ {(totalSetup / 100).toLocaleString("pt-BR")}</p>
+                      <p className="text-[11px] text-muted-foreground">Total implementações</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-2xl font-bold text-[#22c55e]">R$ {(paidSetup / 100).toLocaleString("pt-BR")}</p>
+                      <p className="text-[11px] text-muted-foreground">Recebido</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-2xl font-bold text-[#ef4444]">R$ {(pendingSetup / 100).toLocaleString("pt-BR")}</p>
+                      <p className="text-[11px] text-muted-foreground">Pendente ({pendingCount} clínica{pendingCount !== 1 ? "s" : ""})</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : null;
+            })()}
+
             <Card>
               <CardContent className="p-0">
                 <Table>
