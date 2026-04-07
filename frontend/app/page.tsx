@@ -644,16 +644,9 @@ export default function PatientPage() {
 
               {isChromeIOS && (
                 <div className="text-xs opacity-80 space-y-1">
-                  <p>Para instalar como app, abra no <strong>Safari</strong>:</p>
-                  <button
-                    className="mt-2 px-4 py-2 bg-white/20 rounded-full text-xs font-semibold hover:bg-white/30 transition-colors"
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.href);
-                      alert("Link copiado! Cole no Safari para instalar como app.");
-                    }}
-                  >
-                    Copiar link para abrir no Safari
-                  </button>
+                  <p>Toque em <span className="inline-block mx-1 px-1.5 py-0.5 bg-white/20 rounded text-[11px]">⬆️ Compartilhar</span> no canto superior direito</p>
+                  <p>depois <strong>&quot;Ver Mais&quot;</strong> → <strong>&quot;Adicionar à Tela de Início&quot;</strong></p>
+                  <div className="mt-2 animate-bounce text-xl">↗</div>
                 </div>
               )}
 

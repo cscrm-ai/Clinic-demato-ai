@@ -659,14 +659,18 @@ export default function SuperAdminPage() {
                                   const msg = `✨ *${c.name}* — Análise de Pele com IA\n\n` +
                                     `Acesse: ${url}\n\n` +
                                     `📲 *Instalar como aplicativo:*\n\n` +
-                                    `*iPhone:*\n` +
-                                    `⚠️ No iPhone, só funciona pelo *Safari*. Se você usa Chrome, copie o link e abra no Safari.\n` +
-                                    `1. Abra o link acima no *Safari*\n` +
-                                    `2. Toque no ícone de compartilhar (⬆️) na barra inferior\n` +
-                                    `3. Role e toque em *"Adicionar à Tela de Início"*\n` +
+                                    `*iPhone (Safari):*\n` +
+                                    `1. Abra o link acima no Safari\n` +
+                                    `2. Toque em ⬆️ (compartilhar) na barra inferior\n` +
+                                    `3. Toque em *"Adicionar à Tela de Início"*\n` +
                                     `4. Toque em *"Adicionar"*\n\n` +
-                                    `*Android:*\n` +
-                                    `1. Abra o link acima no *Chrome*\n` +
+                                    `*iPhone (Chrome):*\n` +
+                                    `1. Abra o link acima no Chrome\n` +
+                                    `2. Toque em ⬆️ (compartilhar) no canto superior direito\n` +
+                                    `3. Toque em *"Ver Mais"*\n` +
+                                    `4. Toque em *"Adicionar à Tela de Início"*\n\n` +
+                                    `*Android (Chrome):*\n` +
+                                    `1. Abra o link acima no Chrome\n` +
                                     `2. Toque no menu (⋮) no canto superior direito\n` +
                                     `3. Toque em *"Instalar aplicativo"*\n` +
                                     `4. Confirme a instalação\n\n` +
