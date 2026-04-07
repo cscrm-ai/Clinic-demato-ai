@@ -948,7 +948,7 @@ async def super_usage(
     """Lista eventos de uso com filtros opcionais + dados da análise."""
     db    = get_db()
     query = db.table("usage_events").select(
-        "*, clinics(name, subdomain), analyses(duration_ms, skin_type, fitzpatrick_type, skin_score, created_at, total_cost_cents, image_path, findings, plano_terapeutico, am_routine, pm_routine, general_observations)"
+        "*, clinics(name, subdomain), analyses(duration_ms, skin_type, fitzpatrick_type, created_at, total_cost_cents)"
     )
 
     if clinic_id:
@@ -957,30 +957,29 @@ async def super_usage(
         query = query.eq("provider", provider)
 
     result = query.order("created_at", desc=True).limit(1000).execute()
-    data = result.data or []
+    return result.data or []
 
-    # Generate signed URLs for analysis images (deduplicated)
-    seen_analyses: dict[str, str] = {}
-    for row in data:
-        a = row.get("analyses")
-        aid = row.get("analysis_id", "")
-        if a and aid and aid not in seen_analyses:
-            path = a.get("image_path", "")
-            if path:
-                try:
-                    seen_analyses[aid] = get_signed_url(path, expires_in=3600)
-                except Exception:
-                    seen_analyses[aid] = ""
-            else:
-                seen_analyses[aid] = ""
-    # Inject image_url into analyses
-    for row in data:
-        a = row.get("analyses")
-        aid = row.get("analysis_id", "")
-        if a and aid in seen_analyses:
-            a["image_url"] = seen_analyses[aid]
 
-    return data
+@app.get("/api/super/usage/{analysis_id}")
+async def super_usage_detail(
+    analysis_id: str,
+    user_id: str = Depends(require_super_admin),
+):
+    """Retorna dados completos de uma análise para o painel de uso."""
+    db = get_db()
+    result = db.table("analyses").select("*").eq("id", analysis_id).single().execute()
+    if not result.data:
+        return JSONResponse(status_code=404, content={"error": "Análise não encontrada."})
+    record = result.data
+    path = record.get("image_path", "")
+    if path:
+        try:
+            record["image_url"] = get_signed_url(path, expires_in=3600)
+        except Exception:
+            record["image_url"] = ""
+    else:
+        record["image_url"] = ""
+    return record
 
 
 # ═══════════════════════════════════════════════════════════════════════════
