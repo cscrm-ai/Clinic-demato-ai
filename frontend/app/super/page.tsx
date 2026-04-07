@@ -784,7 +784,7 @@ export default function SuperAdminPage() {
                             {/* Patient report preview — loaded on demand */}
                             <div className="p-4 border-t">
                               {detailLoading && <p className="text-xs text-muted-foreground">Carregando resultado…</p>}
-                              {analysisDetail && expandedAnalysis === analysisId && (() => {
+                              {analysisDetail && expandedAnalysis === analysisId && ((): React.ReactNode => {
                                 const d = analysisDetail as Record<string, unknown>;
                                 const findings = Array.isArray(d.findings) ? d.findings as { description: string; zone?: string; priority?: string; conduta?: string; x_point?: number; y_point?: number; procedimentos_indicados?: { nome: string; sessoes_estimadas?: string }[] }[] : [];
                                 const plan = d.plano_terapeutico as { curto_prazo?: string; medio_prazo?: string; longo_prazo?: string } | null;
