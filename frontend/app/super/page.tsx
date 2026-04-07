@@ -32,10 +32,16 @@ import {
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 
 type Clinic = {
@@ -497,6 +503,146 @@ export default function SuperAdminPage() {
                       <Bar dataKey="cost" fill="#8b5cf6" radius={[0, 4, 4, 0]} name="Custo (R$)" />
                     </BarChart>
                   </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── 2nd row: advanced metrics ── */}
+            {overview && (() => {
+              const avgDur = Number(overview.avg_duration_ms || 0);
+              const costPer = (overview.analyses_period as number) > 0
+                ? (Number(overview.cost_period_cents || 0) / Number(overview.analyses_period)) / 100
+                : 0;
+              const mrrR = Number(overview.mrr_cents || 0) / 100;
+              const costR = Number(overview.cost_period_cents || 0) / 100;
+              const margin = mrrR > 0 ? ((mrrR - costR) / mrrR * 100) : 0;
+              return (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6 mb-8">
+                  <Card>
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-2xl font-bold" style={{ color: "#0ea5e9" }}>{avgDur > 0 ? `${Math.round(avgDur / 1000)}s` : "—"}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Tempo médio/análise</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-2xl font-bold" style={{ color: "#f59e0b" }}>R$ {costPer.toFixed(2)}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Custo médio/análise</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-2xl font-bold" style={{ color: margin >= 80 ? "#22c55e" : margin >= 50 ? "#f59e0b" : "#ef4444" }}>
+                        {mrrR > 0 ? `${margin.toFixed(0)}%` : "—"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Margem bruta (R$ {(mrrR - costR).toFixed(0)})</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-2xl font-bold" style={{ color: "#a855f7" }}>{String(overview.new_clinics ?? 0)}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Novas clínicas ({dashPeriod}d)</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()}
+
+            {/* ── Receita vs Custo ── */}
+            {overview && Number(overview.mrr_cents || 0) > 0 && (
+              <Card className="mb-6">
+                <CardHeader><CardTitle className="text-base">Receita vs Custo de IA</CardTitle></CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={[{
+                      name: "Período",
+                      receita: Number(overview.mrr_cents || 0) / 100,
+                      custo: Number(overview.cost_period_cents || 0) / 100,
+                    }]} layout="vertical" margin={{ left: 60 }}>
+                      <XAxis type="number" tick={{ fontSize: 11 }} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={55} />
+                      <Tooltip formatter={(v) => `R$ ${Number(v).toFixed(2)}`} />
+                      <Legend />
+                      <Bar dataKey="receita" fill="#22c55e" radius={[0, 4, 4, 0]} name="MRR" />
+                      <Bar dataKey="custo" fill="#ef4444" radius={[0, 4, 4, 0]} name="Custo IA" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── Tempo médio por dia (Line chart) ── */}
+            {Array.isArray(overview?.duration_chart) && (overview.duration_chart as { date: string; avg_s: number }[]).some((d: { avg_s: number }) => d.avg_s > 0) && (
+              <Card className="mb-6">
+                <CardHeader><CardTitle className="text-base">Tempo médio de análise por dia (segundos)</CardTitle></CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={(overview.duration_chart as { date: string; avg_s: number }[]).map((d: { date: string; avg_s: number }) => ({ date: d.date.slice(5), avg_s: d.avg_s }))}>
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip formatter={(v) => `${v}s`} />
+                      <Line type="monotone" dataKey="avg_s" stroke="#0ea5e9" strokeWidth={2} dot={false} name="Tempo (s)" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── Distribuição por clínica (Pie) ── */}
+            {Array.isArray(overview?.clinic_chart) && (overview.clinic_chart as { name: string; analyses: number }[]).length > 1 && (
+              <Card className="mb-6">
+                <CardHeader><CardTitle className="text-base">Distribuição de análises por clínica</CardTitle></CardHeader>
+                <CardContent className="flex justify-center">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={overview.clinic_chart as { name: string; analyses: number }[]}
+                        dataKey="analyses"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={90}
+                        innerRadius={50}
+                        label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {(overview.clinic_chart as { name: string }[]).map((_: unknown, i: number) => (
+                          <Cell key={i} fill={["#D99C94", "#8b5cf6", "#22c55e", "#f59e0b", "#0ea5e9", "#ef4444", "#ec4899"][i % 7]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── Top Clínicas (Table) ── */}
+            {Array.isArray(overview?.clinic_chart) && (overview.clinic_chart as { name: string; analyses: number; cost: number; avg_duration_s: number }[]).length > 0 && (
+              <Card>
+                <CardHeader><CardTitle className="text-base">Top clínicas — ranking por uso</CardTitle></CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>#</TableHead>
+                        <TableHead>Clínica</TableHead>
+                        <TableHead>Análises</TableHead>
+                        <TableHead>Custo (R$)</TableHead>
+                        <TableHead>Tempo médio</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(overview.clinic_chart as { name: string; analyses: number; cost: number; avg_duration_s: number }[]).map((c: { name: string; analyses: number; cost: number; avg_duration_s: number }, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-bold text-muted-foreground">{i + 1}</TableCell>
+                          <TableCell className="font-medium">{c.name}</TableCell>
+                          <TableCell>{c.analyses}</TableCell>
+                          <TableCell>R$ {c.cost.toFixed(2)}</TableCell>
+                          <TableCell>{c.avg_duration_s > 0 ? `${c.avg_duration_s}s` : "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             )}

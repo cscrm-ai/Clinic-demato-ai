@@ -283,19 +283,28 @@ def get_super_admin_overview(days: int = 30, from_date: str | None = None, to_da
         clinic_events_q = clinic_events_q.lte("created_at", period_end)
     clinic_events = clinic_events_q.execute()
 
-    clinic_analyses_q = db.table("analyses").select("clinic_id, clinics(name, subdomain)").gte("created_at", period_start)
+    clinic_analyses_q = db.table("analyses").select("clinic_id, duration_ms, created_at, clinics(name, subdomain)").gte("created_at", period_start)
     if period_end:
         clinic_analyses_q = clinic_analyses_q.lte("created_at", period_end)
     clinic_analyses_raw = clinic_analyses_q.execute()
 
-    # Aggregate per clinic
+    # Aggregate per clinic + duration stats
     clinic_stats: dict[str, dict] = {}
+    all_durations: list[int] = []
+    duration_by_day: dict[str, list[int]] = {}
     for row in clinic_analyses_raw.data or []:
         cid = row.get("clinic_id", "")
         if cid not in clinic_stats:
             c = row.get("clinics") or {}
-            clinic_stats[cid] = {"name": c.get("name", ""), "subdomain": c.get("subdomain", ""), "analyses": 0, "cost_cents": 0}
+            clinic_stats[cid] = {"name": c.get("name", ""), "subdomain": c.get("subdomain", ""), "analyses": 0, "cost_cents": 0, "total_duration_ms": 0}
         clinic_stats[cid]["analyses"] += 1
+        dur = row.get("duration_ms") or 0
+        if dur > 0:
+            all_durations.append(dur)
+            clinic_stats[cid]["total_duration_ms"] += dur
+            day = (row.get("created_at") or "")[:10]
+            if day:
+                duration_by_day.setdefault(day, []).append(dur)
     for row in clinic_events.data or []:
         cid = row.get("clinic_id", "")
         if cid not in clinic_stats:
@@ -304,10 +313,41 @@ def get_super_admin_overview(days: int = 30, from_date: str | None = None, to_da
         clinic_stats[cid]["cost_cents"] += float(row.get("cost_cents", 0))
 
     clinic_chart = [
-        {"name": v["subdomain"] or v["name"], "analyses": v["analyses"], "cost": round(v["cost_cents"] / 100, 2)}
+        {
+            "name": v["subdomain"] or v["name"],
+            "analyses": v["analyses"],
+            "cost": round(v["cost_cents"] / 100, 2),
+            "avg_duration_s": round(v["total_duration_ms"] / v["analyses"] / 1000, 1) if v["analyses"] > 0 else 0,
+        }
         for v in clinic_stats.values()
     ]
     clinic_chart.sort(key=lambda x: x["analyses"], reverse=True)
+
+    # Avg duration for period
+    avg_duration_ms = round(sum(all_durations) / len(all_durations)) if all_durations else 0
+
+    # Duration chart (avg per day)
+    duration_chart = []
+    if from_date and to_date:
+        from datetime import date as _date3
+        start_d2 = _date3.fromisoformat(from_date)
+        for i in range(days):
+            d = start_d2 + timedelta(days=i)
+            ds = d.isoformat()
+            durs = duration_by_day.get(ds, [])
+            duration_chart.append({"date": ds, "avg_s": round(sum(durs) / len(durs) / 1000, 1) if durs else 0})
+    else:
+        for i in range(days):
+            d = now - timedelta(days=days - 1 - i)
+            ds = d.strftime("%Y-%m-%d")
+            durs = duration_by_day.get(ds, [])
+            duration_chart.append({"date": ds, "avg_s": round(sum(durs) / len(durs) / 1000, 1) if durs else 0})
+
+    # New clinics in period
+    new_clinics_q = db.table("clinics").select("id", count="exact").gte("created_at", period_start)
+    if period_end:
+        new_clinics_q = new_clinics_q.lte("created_at", period_end)
+    new_clinics = new_clinics_q.execute()
 
     return {
         "active_clinics": active.count or 0,
@@ -317,7 +357,10 @@ def get_super_admin_overview(days: int = 30, from_date: str | None = None, to_da
         "days": days,
         "mrr_cents": mrr,
         "past_due_clinics": past_due.count or 0,
+        "avg_duration_ms": avg_duration_ms,
+        "new_clinics": new_clinics.count or 0,
         "chart_data": chart_data,
+        "duration_chart": duration_chart,
         "clinic_chart": clinic_chart,
     }
 
