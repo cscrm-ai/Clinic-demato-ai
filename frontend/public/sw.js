@@ -1,4 +1,4 @@
-const CACHE_NAME = "allbele-v1";
+const CACHE_NAME = "allbele-v2";
 const PRECACHE = ["/"];
 
 self.addEventListener("install", (e) => {
@@ -18,14 +18,21 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  // Network-first for API calls, cache-first for static assets
-  if (e.request.url.includes("/api/") || e.request.url.includes("/analyze")) {
-    return; // Let network handle API requests
-  }
+  const url = e.request.url;
+
+  // Skip non-http(s) schemes (chrome-extension, etc.)
+  if (!url.startsWith("http")) return;
+
+  // Skip API calls, analyze, auth, webhooks — let network handle directly
+  if (url.includes("/api/") || url.includes("/analyze") || url.includes("/webhooks")) return;
+
+  // Skip non-GET requests (HEAD, POST, etc.)
+  if (e.request.method !== "GET") return;
+
   e.respondWith(
     fetch(e.request)
       .then((resp) => {
-        if (resp.ok) {
+        if (resp.ok && resp.type === "basic") {
           const clone = resp.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
         }
