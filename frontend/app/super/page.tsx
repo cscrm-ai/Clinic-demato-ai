@@ -362,7 +362,7 @@ export default function SuperAdminPage() {
           <TabsContent value="dashboard">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-bold text-[#3A3330]">Dashboard</h1>
-              <Select value={dashPeriod} onValueChange={(v) => { setDashPeriod(v); loadOverview(v); }}>
+              <Select value={dashPeriod} onValueChange={(v) => { const val = v ?? "30"; setDashPeriod(val); loadOverview(val); }}>
                 <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
