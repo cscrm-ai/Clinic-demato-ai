@@ -175,19 +175,8 @@ export default function SuperAdminPage() {
     }
     const r = await apiFetch(url);
     if (!r.ok) return;
-    const raw = await r.json();
-    // Sanitize: some API values are objects, extract primitives
-    const safe: Record<string, unknown> = { ...raw };
-    for (const key of Object.keys(safe)) {
-      const v = safe[key];
-      if (v && typeof v === "object" && !Array.isArray(v)) {
-        // Extract first numeric value from object
-        const obj = v as Record<string, unknown>;
-        const numKey = Object.keys(obj).find((k) => typeof obj[k] === "number");
-        safe[key] = numKey ? obj[numKey] : JSON.stringify(v);
-      }
-    }
-    setOverview(safe);
+    const data = await r.json();
+    setOverview(data);
   }
 
   async function loadClinics() {
