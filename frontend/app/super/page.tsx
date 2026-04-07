@@ -52,11 +52,15 @@ type Clinic = {
 
 type Plan = { id: string; name: string; price_cents: number; monthly_analyses_limit?: number | null };
 type Usage = {
+  id?: string;
   created_at: string;
-  clinic_name?: string;
   clinic_id?: string;
+  analysis_id?: string;
   provider?: string;
+  operation?: string;
   cost_cents?: number;
+  latency_ms?: number;
+  clinics?: { name?: string; subdomain?: string };
 };
 
 type Invoice = {
@@ -101,6 +105,9 @@ export default function SuperAdminPage() {
 
   // Active tab
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  // Expanded analysis in usage tab
+  const [expandedAnalysis, setExpandedAnalysis] = useState<string | null>(null);
 
   // Model costs
   const [modelCosts, setModelCosts] = useState<Record<string, string>>({});
@@ -596,41 +603,99 @@ export default function SuperAdminPage() {
           {/* ── Uso & Custos ── */}
           <TabsContent value="uso">
             <h1 className="text-2xl font-bold text-[#3A3330] mb-4">Uso & Custos</h1>
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Clínica</TableHead>
-                      <TableHead>Provider</TableHead>
-                      <TableHead>Custo</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {usage.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground text-sm py-8">
-                          Nenhum registro.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {usage.map((u, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-sm">
-                          {new Date(String(u.created_at)).toLocaleString("pt-BR")}
-                        </TableCell>
-                        <TableCell className="text-sm">{String(u.clinic_name || u.clinic_id || "—")}</TableCell>
-                        <TableCell className="text-sm">{String(u.provider || "—")}</TableCell>
-                        <TableCell className="text-sm">
-                          R$ {(Number(u.cost_cents || 0) / 100).toFixed(4)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            {(() => {
+              // Group usage events by analysis_id
+              const grouped: Record<string, Usage[]> = {};
+              for (const u of usage) {
+                const key = u.analysis_id || u.id || `orphan-${u.created_at}`;
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(u);
+              }
+              const analyses = Object.entries(grouped).sort((a, b) => {
+                const da = a[1][0]?.created_at || "";
+                const db_ = b[1][0]?.created_at || "";
+                return db_.localeCompare(da);
+              });
+              const totalAll = usage.reduce((s, u) => s + Number(u.cost_cents || 0), 0);
+
+              return (
+                <div className="space-y-2">
+                  {/* Summary */}
+                  <div className="flex gap-4 mb-4 text-sm">
+                    <Badge variant="outline">{analyses.length} análises</Badge>
+                    <Badge variant="outline">{usage.length} eventos</Badge>
+                    <Badge variant="outline">Total: R$ {(totalAll / 100).toFixed(4)}</Badge>
+                  </div>
+
+                  {analyses.length === 0 && (
+                    <p className="text-sm text-muted-foreground py-8 text-center">Nenhum registro.</p>
+                  )}
+
+                  {analyses.map(([analysisId, events]) => {
+                    const totalCents = events.reduce((s, e) => s + Number(e.cost_cents || 0), 0);
+                    const first = events[0];
+                    const clinic = first?.clinics;
+                    const clinicName = clinic?.name || clinic?.subdomain || "—";
+                    const date = first?.created_at ? new Date(first.created_at).toLocaleString("pt-BR") : "—";
+                    const isOpen = expandedAnalysis === analysisId;
+
+                    return (
+                      <Card key={analysisId} className="overflow-hidden">
+                        <button
+                          className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors"
+                          onClick={() => setExpandedAnalysis(isOpen ? null : analysisId)}
+                        >
+                          <span className="text-xs" style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>▶</span>
+                          <span className="text-sm flex-1 min-w-0">
+                            <span className="font-semibold">{clinicName}</span>
+                            <span className="text-muted-foreground ml-2">{date}</span>
+                          </span>
+                          <span className="text-xs text-muted-foreground">{events.length} calls</span>
+                          <span className="text-sm font-mono font-bold" style={{ color: "#D99C94" }}>
+                            R$ {(totalCents / 100).toFixed(4)}
+                          </span>
+                        </button>
+
+                        {isOpen && (
+                          <div className="border-t bg-muted/30">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-xs">Hora</TableHead>
+                                  <TableHead className="text-xs">Provider</TableHead>
+                                  <TableHead className="text-xs">Operação</TableHead>
+                                  <TableHead className="text-xs">Latência</TableHead>
+                                  <TableHead className="text-xs text-right">Custo</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {events.map((e, i) => (
+                                  <TableRow key={i} className="text-xs">
+                                    <TableCell>
+                                      {e.created_at ? new Date(e.created_at).toLocaleTimeString("pt-BR") : "—"}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant="outline" className="text-[10px]">
+                                        {String(e.provider || "—")}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="font-mono text-[11px]">{String(e.operation || "—")}</TableCell>
+                                    <TableCell>{e.latency_ms ? `${(e.latency_ms / 1000).toFixed(1)}s` : "—"}</TableCell>
+                                    <TableCell className="text-right font-mono">
+                                      R$ {(Number(e.cost_cents || 0) / 100).toFixed(4)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </TabsContent>
 
           {/* ── Financeiro ── */}
