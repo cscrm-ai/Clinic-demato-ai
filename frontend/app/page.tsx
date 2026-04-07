@@ -63,6 +63,7 @@ export default function PatientPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState("");
+  const [videoPopup, setVideoPopup] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [stepTitle, setStepTitle] = useState(ANALYSIS_STEPS[0].title);
   const [stepDetail, setStepDetail] = useState(ANALYSIS_STEPS[0].detail);
@@ -82,6 +83,12 @@ export default function PatientPage() {
       })
       .catch(() => {});
   }, []);
+
+  function toEmbedUrl(url: string): string {
+    // Convert YouTube URL to embed format
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&rel=0` : url;
+  }
 
   function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -467,10 +474,8 @@ export default function PatientPage() {
                                   {p.sessoes_estimadas && <p className="opacity-60">{p.sessoes_estimadas}</p>}
                                   {p.horizonte && <p className="opacity-50 text-[10px]">{HORIZON[p.horizonte] || p.horizonte}</p>}
                                   {videoUrl && (
-                                    <a
-                                      href={videoUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
+                                    <button
+                                      onClick={() => setVideoPopup(videoUrl)}
                                       className="inline-flex items-center gap-1 mt-1 px-2 py-1 rounded-full text-[10px] font-semibold text-white transition-all hover:brightness-110"
                                       style={{ background: "var(--color-accent,#D99C94)" }}
                                     >
@@ -479,7 +484,7 @@ export default function PatientPage() {
                                         <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none" />
                                       </svg>
                                       Assistir vídeo
-                                    </a>
+                                    </button>
                                   )}
                                 </div>
                               </div>
@@ -565,6 +570,38 @@ export default function PatientPage() {
           </Button>
         </div>
       </div>
+
+      {/* Video popup overlay */}
+      {videoPopup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.8)" }}
+          onClick={() => setVideoPopup(null)}
+        >
+          <div
+            className="relative w-full max-w-lg bg-black rounded-2xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setVideoPopup(null)}
+              className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 text-white text-sm hover:bg-black/80 transition-colors"
+            >
+              ✕
+            </button>
+            {/* YouTube embed */}
+            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+              <iframe
+                src={toEmbedUrl(videoPopup)}
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="Vídeo do procedimento"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
