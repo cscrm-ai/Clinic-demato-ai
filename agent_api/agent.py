@@ -262,7 +262,7 @@ def analyze_image(
 
     agent = Agent(
         name="dra_sync_clinic",
-        model=Gemini(id="gemini-2.0-flash-lite"),
+        model=Gemini(id="gemini-2.5-flash-lite"),
         output_schema=SkinAnalysisReport,
         instructions=SYSTEM_PROMPT,
         markdown=True,

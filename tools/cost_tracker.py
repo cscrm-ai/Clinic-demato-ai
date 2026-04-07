@@ -18,10 +18,9 @@ from decimal import ROUND_HALF_UP, Decimal
 # Constantes de preço — edite aqui quando os valores mudarem
 # ---------------------------------------------------------------------------
 
-# Gemini 2.0 Flash Lite — preço por 1 milhão de tokens (USD)
-# NOTA: Flash Lite será descontinuado em 01/06/2026 — migrar para outro modelo
-GEMINI_INPUT_PRICE_PER_1M_USD  = Decimal("0.075")
-GEMINI_OUTPUT_PRICE_PER_1M_USD = Decimal("0.300")
+# Gemini 2.5 Flash Lite — preço por 1 milhão de tokens (USD)
+GEMINI_INPUT_PRICE_PER_1M_USD  = Decimal("0.10")
+GEMINI_OUTPUT_PRICE_PER_1M_USD = Decimal("0.40")
 
 # Moondream3 via FAL AI — preço por 1M tokens (USD)
 # Input: $0.40/1M tokens, Output: $3.50/1M tokens
