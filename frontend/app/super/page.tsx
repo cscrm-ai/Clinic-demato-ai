@@ -537,12 +537,12 @@ export default function SuperAdminPage() {
                               : (c.usage_this_month ?? 0)}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-mono">
-                                R$ {((c.setup_fee_cents || 0) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}
-                              </span>
-                              {c.setup_fee_cents > 0 && (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {c.setup_fee_cents > 0 ? (
                                 <>
+                                  <span className="text-sm font-mono">
+                                    R$ {((c.setup_fee_cents) / 100).toLocaleString("pt-BR")}
+                                  </span>
                                   <Badge
                                     variant={c.setup_fee_paid ? "default" : "destructive"}
                                     className="text-[10px] cursor-pointer"
@@ -564,22 +564,41 @@ export default function SuperAdminPage() {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="text-[10px] h-6 px-2"
+                                      className="text-[10px] h-5 px-1.5"
                                       onClick={async () => {
                                         const r = await apiFetch(`/api/super/clinics/${c.id}/setup-fee-link`, { method: "POST" });
                                         const data = await r.json();
                                         if (data.payment_url) {
                                           navigator.clipboard.writeText(data.payment_url);
-                                          alert(`Link de pagamento copiado!\n\n${data.payment_url}`);
+                                          alert(`Link copiado!\n\n${data.payment_url}`);
                                         } else {
                                           alert(data.error || "Erro ao gerar link.");
                                         }
                                       }}
                                     >
-                                      💳 Link
+                                      💳
                                     </Button>
                                   )}
                                 </>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs h-7 text-muted-foreground"
+                                  onClick={async () => {
+                                    const val = prompt("Taxa de implementação (R$):", "20000");
+                                    if (!val) return;
+                                    const cents = Math.round(Number(val) * 100);
+                                    if (isNaN(cents) || cents <= 0) { alert("Valor inválido."); return; }
+                                    await apiFetch(`/api/super/clinics/${c.id}`, {
+                                      method: "PATCH",
+                                      body: JSON.stringify({ setup_fee_cents: cents }),
+                                    });
+                                    loadClinics();
+                                  }}
+                                >
+                                  + Definir
+                                </Button>
                               )}
                             </div>
                           </TableCell>
