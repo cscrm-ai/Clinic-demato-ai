@@ -450,17 +450,41 @@ export default function PatientPage() {
                       {/* Procedimentos indicados */}
                       {f.procedimentos_indicados?.length ? (
                         <div className="space-y-2 mt-1">
-                          {f.procedimentos_indicados.map((p, j) => (
-                            <div key={j} className="flex gap-2 items-start">
-                              <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: "var(--color-accent,#D99C94)" }} />
-                              <div className="text-xs">
-                                <p className="font-semibold">{p.nome}</p>
-                                {p.descricao_breve && <p className="opacity-70">{p.descricao_breve}</p>}
-                                {p.sessoes_estimadas && <p className="opacity-60">{p.sessoes_estimadas}</p>}
-                                {p.horizonte && <p className="opacity-50 text-[10px]">{HORIZON[p.horizonte] || p.horizonte}</p>}
+                          {f.procedimentos_indicados.map((p, j) => {
+                            // Match procedure name with catalog to find video URL
+                            const catalogMatch = config?.procedures_catalog?.find(
+                              (cat) => cat.video && p.nome && cat.nome.toLowerCase().includes(p.nome.toLowerCase().split(" ")[0])
+                            ) || config?.procedures_catalog?.find(
+                              (cat) => cat.video && p.nome && p.nome.toLowerCase().includes(cat.nome.toLowerCase().split(" ")[0])
+                            );
+                            const videoUrl = catalogMatch?.video || "";
+                            return (
+                              <div key={j} className="flex gap-2 items-start">
+                                <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: "var(--color-accent,#D99C94)" }} />
+                                <div className="text-xs flex-1">
+                                  <p className="font-semibold">{p.nome}</p>
+                                  {p.descricao_breve && <p className="opacity-70">{p.descricao_breve}</p>}
+                                  {p.sessoes_estimadas && <p className="opacity-60">{p.sessoes_estimadas}</p>}
+                                  {p.horizonte && <p className="opacity-50 text-[10px]">{HORIZON[p.horizonte] || p.horizonte}</p>}
+                                  {videoUrl && (
+                                    <a
+                                      href={videoUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 mt-1 px-2 py-1 rounded-full text-[10px] font-semibold text-white transition-all hover:brightness-110"
+                                      style={{ background: "var(--color-accent,#D99C94)" }}
+                                    >
+                                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none" />
+                                      </svg>
+                                      Assistir vídeo
+                                    </a>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : null}
 
